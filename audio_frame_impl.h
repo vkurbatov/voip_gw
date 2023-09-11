@@ -13,15 +13,21 @@ class audio_frame_impl_basic : public i_audio_frame
     audio_frame_info_t  m_info;
 public:
     audio_frame_impl_basic(const audio_frame_info_t& info = {});
+
+    void set_info(const audio_frame_info_t& info);
+
     // i_media_frame interface
 public:
     media_type_t type() const override;
     bool is_valid() const override;
+    const std::string& format() const override;
+    void set_format(const std::string_view& format) override;
 
     // i_audio_frame interface
 public:
     uint32_t sample_rate() const override;
     uint32_t channels() const override;
+
     void set_sample_rate(uint32_t sample_rate) override;
     void set_channels(uint32_t channels) override;
 };
@@ -50,6 +56,8 @@ public:
                      , const audio_frame_info_t& info);
     audio_frame_impl(smart_buffer&& audio_buffer = {}
                      , const audio_frame_info_t& info = {});
+
+    void set_buffer(smart_buffer&& audio_buffer);
 
     // i_data_buffer interface
 public:

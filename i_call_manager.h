@@ -10,10 +10,19 @@ namespace voip
 class i_call_manager
 {
 public:
+    enum class call_event_t
+    {
+        new_call,
+        close_call
+    };
+
     class i_listener
     {
+    public:
         virtual ~i_listener() = default;
-        virtual bool on_call(i_call& call) = 0;
+        virtual bool on_call(i_call& call, call_event_t event) = 0;
+        virtual void on_started() = 0;
+        virtual void on_stopped() = 0;
     };
 
     using u_ptr_t = std::unique_ptr<i_call_manager>;

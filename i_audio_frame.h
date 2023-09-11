@@ -2,6 +2,7 @@
 #define VOIP_I_AUDIO_FRAME_H
 
 #include "i_media_frame.h"
+#include <string>
 
 namespace voip
 {

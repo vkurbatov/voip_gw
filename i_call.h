@@ -20,8 +20,10 @@ public:
     virtual voip_protocol_t protocol() const = 0;
     virtual call_direction_t direction() const = 0;
     virtual i_media_session* get_session(std::size_t session_id) = 0;
+    virtual std::size_t session_count() const = 0;
     virtual std::string url() const = 0;
     virtual std::string id() const = 0;
+    virtual bool is_established() const = 0;
 
 
 };

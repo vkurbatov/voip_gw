@@ -42,7 +42,14 @@ set(SOURCES
     const_data_buffer.cpp
     mutable_data_buffer.cpp
     audio_frame_impl.cpp
+    video_frame_impl.cpp
+    call_manager_config.cpp
+    opal/opal_types.cpp
     opal/opal_video_frame.cpp
+    opal/opal_factory.cpp
+    opal/opal_call.cpp
+    opal/opal_media_session.cpp
+    opal/opal_media_stream.cpp
 )
 
 set(PUBLIC_HEADERS
@@ -52,15 +59,19 @@ set(PUBLIC_HEADERS
     i_data_buffer.h
     i_call.h
     i_call_manager.h
+    i_call_factory.h
     i_media_session.h
     i_media_stream.h
     i_media_format.h
     i_media_frame.h
     i_audio_frame.h
     i_video_frame.h
+    call_manager_config.h
     audio_frame_info.h
     video_frame_info.h
     stream_metrics.h
+    opal/opal_types.h
+    opal/opal_manager_config.h
 )
 
 set(PRIVATE_HEADERS
@@ -69,7 +80,12 @@ set(PRIVATE_HEADERS
     const_data_buffer.h
     mutable_data_buffer.h
     audio_frame_impl.h
+    video_frame_impl.h
     opal/opal_video_frame.h
+    opal/opal_factory.h
+    opal/opal_call.h
+    opal/opal_media_session.h
+    opal/opal_media_stream.h
 )
 
 add_library(${PROJECT_NAME}

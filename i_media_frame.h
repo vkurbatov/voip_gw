@@ -4,6 +4,7 @@
 #include "i_data_buffer.h"
 #include "media_types.h"
 #include <memory>
+#include <string>
 
 namespace voip
 {
@@ -17,6 +18,8 @@ public:
     virtual ~i_media_frame() = default;
     virtual media_type_t type() const = 0;
     virtual bool is_valid() const = 0;
+    virtual const std::string& format() const = 0;
+    virtual void set_format(const std::string_view& format) = 0;
 };
 
 }

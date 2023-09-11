@@ -3,9 +3,11 @@
 namespace voip
 {
 
-audio_frame_info_t::audio_frame_info_t(uint32_t sample_rate
+audio_frame_info_t::audio_frame_info_t(const std::string_view& format
+                                       , uint32_t sample_rate
                                        , uint32_t channels)
-    : sample_rate(sample_rate)
+    : format(format)
+    , sample_rate(sample_rate)
     , channels(channels)
 {
 
@@ -13,7 +15,8 @@ audio_frame_info_t::audio_frame_info_t(uint32_t sample_rate
 
 bool audio_frame_info_t::operator ==(const audio_frame_info_t &other) const
 {
-    return sample_rate == other.sample_rate
+    return format == other.format
+            && sample_rate == other.sample_rate
             && channels == other.channels;
 }
 
@@ -24,7 +27,8 @@ bool audio_frame_info_t::operator !=(const audio_frame_info_t &other) const
 
 bool audio_frame_info_t::is_valid() const
 {
-    return sample_rate > 0
+    return !format.empty()
+            && sample_rate > 0
             && channels > 0;
 }
 

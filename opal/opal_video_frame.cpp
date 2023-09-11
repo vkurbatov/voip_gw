@@ -89,5 +89,16 @@ bool opal_video_frame_ref::is_valid() const
     return m_opal_video_buffer.size() >= sizeof(PluginCodec_Video_FrameHeader);
 }
 
+const std::string &opal_video_frame_ref::format() const
+{
+    static const std::string single_format = "YUV420";
+    return single_format;
+}
+
+void opal_video_frame_ref::set_format(const std::string_view &format)
+{
+    // not impl
+}
+
 
 }

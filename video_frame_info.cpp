@@ -3,11 +3,13 @@
 namespace voip
 {
 
-video_frame_info_t::video_frame_info_t(uint32_t left
+video_frame_info_t::video_frame_info_t(const std::string_view& format
+                                       , uint32_t left
                                        , uint32_t top
                                        , uint32_t width
                                        , uint32_t height)
-    : left(left)
+    : format(format)
+    , left(left)
     , top(top)
     , width(width)
     , height(height)
@@ -17,7 +19,8 @@ video_frame_info_t::video_frame_info_t(uint32_t left
 
 bool video_frame_info_t::operator ==(const video_frame_info_t &other) const
 {
-    return left == other.left
+    return format == other.format
+            && left == other.left
             && top == other.top
             && width == other.width
             && height == other.height;
@@ -26,6 +29,11 @@ bool video_frame_info_t::operator ==(const video_frame_info_t &other) const
 bool video_frame_info_t::operator !=(const video_frame_info_t &other) const
 {
     return ! operator == (other);
+}
+
+bool video_frame_info_t::is_valid() const
+{
+    return !format.empty();
 }
 
 }

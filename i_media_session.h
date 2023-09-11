@@ -7,6 +7,7 @@
 namespace voip
 {
 
+class i_call;
 class i_media_stream;
 
 class i_media_session
@@ -19,6 +20,7 @@ public:
     virtual media_type_t media_type() const = 0;
     virtual std::size_t id() const = 0;
     virtual i_media_stream* get_stream(stream_type_t stream_type) const = 0;
+    virtual i_call& get_call() const = 0;
 };
 
 }

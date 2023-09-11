@@ -35,7 +35,8 @@ public:
 public:
     media_type_t type() const override;
     bool is_valid() const;
-
+    const std::string &format() const override;
+    void set_format(const std::string_view &format) override;
 };
 
 }

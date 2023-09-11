@@ -534,6 +534,7 @@ void test1()
 
 
     call_manager    manager;
+    call_endpoint   endpoint(manager);
     SIPEndPoint     sip(manager);
 
     std::cout << "Supported codecs: " << std::endl;
@@ -543,17 +544,14 @@ void test1()
         std::cout << f << std::endl;
     }
 
+    manager.AddRouteEntry("sip.*:.* = local:");
+    manager.AddRouteEntry("local:.* = si:<da>");
 
     if (sip.StartListeners(PStringArray()))
     {
-        call_endpoint endpoint(manager);
-
-        manager.AddRouteEntry("sip.*:.* = local:");
-        manager.AddRouteEntry("local:.* = si:<da>");
-
-
         std::this_thread::sleep_for(std::chrono::minutes(10));
     }
+
 
     std::cout << "End test!" << std::endl;
 

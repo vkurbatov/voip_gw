@@ -10,6 +10,11 @@ audio_frame_impl_basic::audio_frame_impl_basic(const audio_frame_info_t &info)
 
 }
 
+void audio_frame_impl_basic::set_info(const audio_frame_info_t &info)
+{
+    m_info = info;
+}
+
 media_type_t audio_frame_impl_basic::type() const
 {
     return media_type_t::video;
@@ -20,6 +25,11 @@ bool audio_frame_impl_basic::is_valid() const
     return m_info.is_valid();
 }
 
+const std::string &audio_frame_impl_basic::format() const
+{
+    return m_info.format;
+}
+
 uint32_t audio_frame_impl_basic::sample_rate() const
 {
     return m_info.sample_rate;
@@ -28,6 +38,11 @@ uint32_t audio_frame_impl_basic::sample_rate() const
 uint32_t audio_frame_impl_basic::channels() const
 {
     return m_info.channels;
+}
+
+void audio_frame_impl_basic::set_format(const std::string_view &format)
+{
+    m_info.format = format;
 }
 
 void audio_frame_impl_basic::set_sample_rate(uint32_t sample_rate)
@@ -77,6 +92,11 @@ audio_frame_impl::audio_frame_impl(smart_buffer &&audio_buffer
     , m_audio_buffer(std::move(audio_buffer))
 {
 
+}
+
+void audio_frame_impl::set_buffer(smart_buffer &&audio_buffer)
+{
+    m_audio_buffer = std::move(audio_buffer);
 }
 
 const void *audio_frame_impl::data() const
