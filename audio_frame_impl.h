@@ -40,6 +40,7 @@ public:
     audio_frame_impl_ref(i_data_buffer& audio_buffer
                          , const audio_frame_info_t& info = {});
 
+
     // i_data_buffer interface
 public:
     const void *data() const override;

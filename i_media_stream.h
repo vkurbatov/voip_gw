@@ -9,6 +9,7 @@ namespace voip
 
 class i_media_format;
 class i_media_session;
+struct stream_metrics_t;
 
 class i_media_stream
 {

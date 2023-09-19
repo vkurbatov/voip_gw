@@ -12,6 +12,7 @@ struct audio_frame_info_t
     std::string     format;
     std::uint32_t   sample_rate;
     std::uint32_t   channels;
+
     audio_frame_info_t(const std::string_view& format = {}
                        , std::uint32_t sample_rate = 0
                        , std::uint32_t channels = 0);

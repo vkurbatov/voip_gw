@@ -35,6 +35,8 @@ public:
     using u_ptr_t = std::unique_ptr<opal_media_stream>;
     using s_ptr_t = std::shared_ptr<opal_media_stream>;
 
+    static media_type_t get_media_type(const OpalMediaStream& opal_stream);
+
     static u_ptr_t create(opal_media_session& session
                           , OpalMediaStream& native_stream);
 
@@ -43,13 +45,14 @@ public:
 
     ~opal_media_stream();
 
-    OpalMediaStream& native_stream() const;
+    OpalMediaStream& native_stream() const;   
 
     // i_media_stream interface
 public:
     stream_type_t type() const override;
     const i_media_format &format() const override;
     i_media_session &session() const override;
+
 };
 
 }

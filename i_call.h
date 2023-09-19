@@ -9,14 +9,25 @@ namespace voip
 {
 
 class i_media_session;
+class i_media_stream;
 
 class i_call
 {
 public:
+
+    class i_listener
+    {
+    public:
+        virtual ~i_listener() = default;
+        virtual void on_add_session(i_media_session& session) = 0;
+        virtual void on_remove_session(const i_media_session& session) = 0;
+    };
+
     using u_ptr_t = std::unique_ptr<i_call>;
     using s_ptr_t = std::shared_ptr<i_call>;
 
     virtual ~i_call() = default;
+    virtual void set_listener(i_listener* listener) = 0;
     virtual voip_protocol_t protocol() const = 0;
     virtual call_direction_t direction() const = 0;
     virtual i_media_session* get_session(std::size_t session_id) = 0;

@@ -15,18 +15,7 @@ opal_media_stream::opal_media_format::opal_media_format(OpalMediaStream &native_
 
 media_type_t opal_media_stream::opal_media_format::type() const
 {
-    auto media_type = m_native_stream.GetMediaFormat().GetMediaType();
-
-    if (media_type == OpalMediaType::Audio())
-    {
-        return media_type_t::audio;
-    }
-    else if (media_type == OpalMediaType::Video())
-    {
-        return media_type_t::video;
-    }
-
-    return media_type_t::undefined;
+    return opal_media_stream::get_media_type(m_native_stream);
 }
 
 uint32_t opal_media_stream::opal_media_format::sample_rate() const
@@ -42,6 +31,22 @@ uint32_t opal_media_stream::opal_media_format::channels() const
 string opal_media_stream::opal_media_format::name() const
 {
     return m_native_stream.GetMediaFormat().GetEncodingName();
+}
+
+media_type_t opal_media_stream::get_media_type(const OpalMediaStream &opal_stream)
+{
+    auto media_type = opal_stream.GetMediaFormat().GetMediaType();
+
+    if (media_type == OpalMediaType::Audio())
+    {
+        return media_type_t::audio;
+    }
+    else if (media_type == OpalMediaType::Video())
+    {
+        return media_type_t::video;
+    }
+
+    return media_type_t::undefined;
 }
 
 opal_media_stream::u_ptr_t opal_media_stream::create(opal_media_session &session
