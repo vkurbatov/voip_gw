@@ -1,7 +1,9 @@
 #include "opal_media_stream.h"
 #include <opal/mediafmt.h>
 #include <opal/mediastrm.h>
+#include <opal/mediasession.h>
 
+#include "stream_metrics.h"
 #include "opal_media_session.h"
 
 namespace voip
@@ -91,6 +93,31 @@ const i_media_format &opal_media_stream::format() const
 i_media_session& opal_media_stream::session() const
 {
     return m_session;
+}
+
+bool opal_media_stream::get_metrics(stream_metrics_t &metrics) const
+{
+    OpalMediaStatistics opal_statistic;
+    m_native_stream.GetStatistics(opal_statistic);
+    metrics.octets = opal_statistic.m_totalBytes;
+    metrics.frames = opal_statistic.m_totalFrames;
+    metrics.bitrate = opal_statistic.GetBitRate();
+    metrics.framerate = opal_statistic.GetFrameRate();
+    metrics.packets = opal_statistic.m_totalPackets;
+    metrics.lost = opal_statistic.m_packetsLost;
+    metrics.jitter_ms = opal_statistic.m_averageJitter;
+    metrics.rtt_ms = opal_statistic.m_roundTripTime;
+    metrics.format = std::string(opal_statistic.m_mediaFormat);
+
+    if (opal_statistic.m_mediaType == OpalMediaType::Video())
+    {
+        metrics.format.append(":")
+                .append(std::to_string(opal_statistic.m_frameWidth))
+                .append(":")
+                .append(std::to_string(opal_statistic.m_frameHeight));
+    }
+    //opal_statistic.m_mediaFormat
+    return true;
 }
 
 }

@@ -34,6 +34,7 @@ public:
     virtual bool stop() = 0;
     virtual bool is_started() const = 0;
     virtual bool make_call(const std::string_view& url) = 0;
+    virtual i_call* get_call(const std::string_view& call_id) = 0;
 
 };
 

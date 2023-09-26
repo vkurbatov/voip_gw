@@ -14,6 +14,11 @@ void video_frame_impl_basic::set_frame_info(const video_frame_info_t &info)
     m_info = info;
 }
 
+const video_frame_info_t &video_frame_impl_basic::frame_info() const
+{
+    return m_info;
+}
+
 media_type_t video_frame_impl_basic::type() const
 {
     return media_type_t::video;
@@ -98,6 +103,28 @@ void *video_frame_impl_ref::map()
     return m_video_buffer.map();
 }
 
+i_media_frame::u_ptr_t video_frame_impl_ref::clone() const
+{
+    return video_frame_impl::create(smart_buffer(m_video_buffer.data()
+                                                 , m_video_buffer.size()
+                                                 , true)
+                                    , m_info);
+}
+
+video_frame_impl::u_ptr_t video_frame_impl::create(const smart_buffer &video_buffer,
+                                                   const video_frame_info_t &info)
+{
+    return std::make_unique<video_frame_impl>(video_buffer
+                                              , info);
+}
+
+video_frame_impl::u_ptr_t video_frame_impl::create(smart_buffer &&video_buffer
+                                                   , const video_frame_info_t &info)
+{
+    return std::make_unique<video_frame_impl>(std::move(video_buffer)
+                                              , info);
+}
+
 video_frame_impl::video_frame_impl(const smart_buffer &video_buffer
                                    , const video_frame_info_t &info)
     : video_frame_impl_basic(info)
@@ -133,5 +160,12 @@ void *video_frame_impl::map()
 {
     return m_video_buffer.map();
 }
+
+i_media_frame::u_ptr_t video_frame_impl::clone() const
+{
+    return create(m_video_buffer.fork()
+                  , m_info);
+}
+
 
 }

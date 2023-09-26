@@ -18,9 +18,9 @@ public:
     class i_listener
     {
     public:
-        virtual ~i_listener() = 0;
+        virtual ~i_listener() = default;
         virtual void on_add_stream(i_media_stream& stream) = 0;
-        virtual void on_remove_stream(const i_media_stream& stream) = 0;
+        virtual void on_remove_stream(i_media_stream& stream) = 0;
 
         virtual std::size_t on_read_frame(i_media_stream& stream
                                           , i_media_frame& frame) = 0;

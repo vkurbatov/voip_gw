@@ -52,7 +52,7 @@ public:
     stream_type_t type() const override;
     const i_media_format &format() const override;
     i_media_session &session() const override;
-
+    bool get_metrics(stream_metrics_t &metrics) const override;
 };
 
 }

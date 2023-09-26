@@ -10,11 +10,13 @@ namespace voip
 
 class audio_frame_impl_basic : public i_audio_frame
 {
+protected:
     audio_frame_info_t  m_info;
 public:
     audio_frame_impl_basic(const audio_frame_info_t& info = {});
 
     void set_info(const audio_frame_info_t& info);
+    const audio_frame_info_t& frame_info() const;
 
     // i_media_frame interface
 public:
@@ -46,6 +48,10 @@ public:
     const void *data() const override;
     std::size_t size() const override;
     void *map() override;
+
+    // i_media_frame interface
+public:
+    i_media_frame::u_ptr_t clone() const override;
 };
 
 class audio_frame_impl : public audio_frame_impl_basic
@@ -53,6 +59,15 @@ class audio_frame_impl : public audio_frame_impl_basic
     smart_buffer        m_audio_buffer;
 
 public:
+
+    using u_ptr_t = std::unique_ptr<audio_frame_impl>;
+
+    static u_ptr_t create(const smart_buffer& audio_buffer
+                          , const audio_frame_info_t& info);
+
+    static u_ptr_t create(smart_buffer&& audio_buffer = {}
+                          , const audio_frame_info_t& info = {});
+
     audio_frame_impl(const smart_buffer& audio_buffer
                      , const audio_frame_info_t& info);
     audio_frame_impl(smart_buffer&& audio_buffer = {}
@@ -65,6 +80,10 @@ public:
     const void *data() const override;
     std::size_t size() const override;
     void *map() override;
+
+    // i_media_frame interface
+public:
+    i_media_frame::u_ptr_t clone() const override;
 };
 
 }

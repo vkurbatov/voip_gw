@@ -91,6 +91,13 @@ void smart_buffer::resize(std::size_t new_size)
     m_store_data.resize(new_size);
 }
 
+smart_buffer smart_buffer::fork() const
+{
+    return smart_buffer(data()
+                        , size()
+                        , true);
+}
+
 const void *smart_buffer::data() const
 {
     return is_stored()

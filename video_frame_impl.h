@@ -10,11 +10,13 @@ namespace voip
 
 class video_frame_impl_basic : public i_video_frame
 {
+protected:
     video_frame_info_t  m_info;
 public:
     video_frame_impl_basic(const video_frame_info_t& info = {});
 
     void set_frame_info(const video_frame_info_t& info);
+    const video_frame_info_t& frame_info() const;
     // i_media_frame interface
 public:
     media_type_t type() const override;
@@ -47,6 +49,10 @@ public:
     const void *data() const override;
     std::size_t size() const override;
     void *map() override;
+
+    // i_media_frame interface
+public:
+    i_media_frame::u_ptr_t clone() const override;
 };
 
 class video_frame_impl : public video_frame_impl_basic
@@ -54,6 +60,15 @@ class video_frame_impl : public video_frame_impl_basic
     smart_buffer        m_video_buffer;
 
 public:
+
+    using u_ptr_t = std::unique_ptr<video_frame_impl>;
+
+    static u_ptr_t create(const smart_buffer& video_buffer
+                          , const video_frame_info_t& info);
+
+    static u_ptr_t create(smart_buffer&& video_buffer = {}
+                          , const video_frame_info_t& info = {});
+
     video_frame_impl(const smart_buffer& video_buffer
                      , const video_frame_info_t& info);
     video_frame_impl(smart_buffer&& video_buffer = {}
@@ -66,6 +81,10 @@ public:
     const void *data() const override;
     std::size_t size() const override;
     void *map() override;
+
+    // i_media_frame interface
+public:
+    i_media_frame::u_ptr_t clone() const override;
 };
 
 

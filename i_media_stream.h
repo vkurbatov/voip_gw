@@ -22,6 +22,7 @@ public:
     virtual stream_type_t type() const = 0;
     virtual const i_media_format& format() const = 0;
     virtual i_media_session& session() const = 0;
+    virtual bool get_metrics(stream_metrics_t& metrics) const = 0;
 };
 
 }

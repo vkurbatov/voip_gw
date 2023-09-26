@@ -23,7 +23,7 @@
 
 #include <cstring>
 
-namespace vgw
+namespace voip
 {
 
 using frame_data_t = std::vector<std::uint8_t>;

@@ -1,8 +1,14 @@
 #include "opal_video_frame.h"
+#include "video_frame_impl.h"
 #include "opal/codec/opalplugin.h"
 
 namespace voip
 {
+
+std::size_t opal_video_frame_ref::opal_video_header_size()
+{
+    return sizeof(PluginCodec_Video_FrameHeader);
+}
 
 opal_video_frame_ref::opal_video_frame_ref(i_data_buffer &buffer)
     : m_opal_video_buffer(buffer)
@@ -95,9 +101,22 @@ const std::string &opal_video_frame_ref::format() const
     return single_format;
 }
 
-void opal_video_frame_ref::set_format(const std::string_view &format)
+void opal_video_frame_ref::set_format(const std::string_view& /*format*/)
 {
     // not impl
+}
+
+i_media_frame::u_ptr_t opal_video_frame_ref::clone() const
+{
+    if (is_valid())
+    {
+        return video_frame_impl::create(smart_buffer(data()
+                                              , size()
+                                              , true)
+                                        , { format(), left(), top(), width(), height() });
+    }
+
+    return nullptr;
 }
 
 

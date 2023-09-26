@@ -19,6 +19,14 @@ enum class call_direction_t
     outgiong
 };
 
+enum class voip_control_id_t
+{
+    undefined,
+    hangup_call,
+    tone,
+    custom
+};
+
 }
 
 #endif // VOIP_TYPES_H

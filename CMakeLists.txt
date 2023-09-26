@@ -35,6 +35,7 @@ link_directories(
 set(SOURCES
     main.cpp
     test.cpp
+    api_test.cpp
     stream_metrics.cpp
     video_frame_info.cpp
     audio_frame_info.cpp
@@ -43,6 +44,7 @@ set(SOURCES
     mutable_data_buffer.cpp
     audio_frame_impl.cpp
     video_frame_impl.cpp
+    voip_control.cpp
     call_manager_config.cpp
     opal/opal_types.cpp
     opal/opal_video_frame.cpp
@@ -50,6 +52,7 @@ set(SOURCES
     opal/opal_call.cpp
     opal/opal_media_session.cpp
     opal/opal_media_stream.cpp
+    opal/opal_manager_config.cpp
 )
 
 set(PUBLIC_HEADERS
@@ -81,6 +84,7 @@ set(PRIVATE_HEADERS
     mutable_data_buffer.h
     audio_frame_impl.h
     video_frame_impl.h
+    voip_control.h
     opal/opal_video_frame.h
     opal/opal_factory.h
     opal/opal_call.h

@@ -17,7 +17,6 @@ class opal_call : public i_call
     using session_map_t = std::unordered_map<std::uint32_t, opal_media_session>;
 
     OpalConnection&     m_native_connection;
-    call_direction_t    m_direction;
 
     i_listener*         m_listener;
 
@@ -25,9 +24,9 @@ class opal_call : public i_call
 
     friend class opal_media_session;
 
+
 public:
     opal_call(OpalConnection& native_connection
-              , call_direction_t direction = call_direction_t::undefined
               , i_listener* listener = nullptr);
 
     bool add_stream(OpalMediaStream& native_stream);
@@ -37,6 +36,8 @@ public:
 
     OpalConnection& native_connection() const;
     OpalCall& native_call() const;
+
+    void on_user_input(const std::string& indication);
 
     // i_call interface
 public:
@@ -48,6 +49,7 @@ public:
     std::string url() const override;
     std::string id() const override;
     bool is_established() const override;
+    bool control(const voip_control_t& control) override;
 
 private:
 
@@ -58,6 +60,7 @@ private:
 
     void on_add_session(opal_media_session& session);
     void on_remove_session(opal_media_session& session);
+
 
 };
 

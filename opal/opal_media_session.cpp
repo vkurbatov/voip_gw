@@ -64,6 +64,8 @@ bool opal_media_session::add_stream(OpalMediaStream &native_stream)
 
         stream = opal_media_stream::create(*this
                                            , native_stream);
+
+        return stream != nullptr;
     }
 
     return false;
@@ -71,16 +73,12 @@ bool opal_media_session::add_stream(OpalMediaStream &native_stream)
 
 bool opal_media_session::remove_stream(const OpalMediaStream &native_stream)
 {
-    if (m_inbound_stream != nullptr
-            && &m_inbound_stream->native_stream() == &native_stream)
+    auto& stream = native_stream.IsSource() ? m_outbound_stream : m_inbound_stream;
+
+    if (stream != nullptr
+            && &stream->native_stream() == &native_stream)
     {
-        m_inbound_stream.reset();
-        return true;
-    }
-    else if (m_outbound_stream != nullptr
-             && &m_outbound_stream->native_stream() == &native_stream)
-    {
-        m_outbound_stream.reset();
+        stream.reset();
         return true;
     }
 
@@ -137,9 +135,11 @@ size_t opal_media_session::write_data(const void *data
             {
                 opal_video_frame_ref video_frame(buffer);
 
-                return on_write_frame(*m_outbound_stream
-                                      , video_frame);
-
+                if (auto write_size = on_write_frame(*m_outbound_stream
+                                                     , video_frame))
+                {
+                    return write_size + opal_video_frame_ref::opal_video_header_size();
+                }
             }
             break;
             default:;
@@ -170,9 +170,11 @@ size_t opal_media_session::read_data(void *data
             {
                 opal_video_frame_ref video_frame(buffer);
 
-                return on_read_frame(*m_outbound_stream
-                                      , video_frame);
-
+                if (auto read_size = on_read_frame(*m_outbound_stream
+                                              , video_frame))
+                {
+                    return read_size + opal_video_frame_ref::opal_video_header_size();
+                }
             }
             break;
             default:;

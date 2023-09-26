@@ -5,14 +5,18 @@
 
 #include <ep/localep.h>
 #include <sip/sipep.h>
+#include <opal/transcoders.h>
 
 #include <shared_mutex>
+#include <thread>
+#include <cstring>
 
 namespace voip
 {
 
 
-class opal_manager : public i_call_manager
+class opal_manager final : public i_call_manager
+        , PProcess
 {
     using shared_mutex_t = std::shared_mutex;
     using shared_lock_t = std::shared_lock<shared_mutex_t>;
@@ -20,7 +24,7 @@ class opal_manager : public i_call_manager
 
     using sip_endpoint_ptr_t = std::unique_ptr<SIPEndPoint>;
 
-    class opal_endpoint : public OpalLocalEndPoint
+    class opal_endpoint final : public OpalLocalEndPoint
     {
         opal_manager&   m_owner;
 
@@ -31,7 +35,12 @@ class opal_manager : public i_call_manager
                                 , true)
             , m_owner(owner)
         {
-
+            std::cout << "Supported media formats: " << std::endl;
+            for (auto& f : OpalTranscoder::GetPossibleFormats(GetMediaFormats()))
+            {
+                std::cout << "name " << f.GetName()
+                          << ", codec_name: " << f.GetEncodingName() << std::endl;
+            }
         }
 
         // OpalEndPoint interface
@@ -92,6 +101,11 @@ class opal_manager : public i_call_manager
                               , PINDEX length
                               , PINDEX &written) override
         {
+            if (mediaStream.IsSynchronous())
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            }
+
             return m_owner.on_write_media_data(connection
                                                , mediaStream
                                                , data
@@ -103,6 +117,16 @@ class opal_manager : public i_call_manager
         void OnReleased(OpalConnection &connection) override
         {
             m_owner.on_released_call(connection);
+        }
+
+        // OpalLocalEndPoint interface
+    public:
+        bool OnUserInput(const OpalLocalConnection &connection, const PString &indication) override
+        {
+            m_owner.on_user_input(connection
+                                  , indication);
+
+            return true;
         }
     };
 
@@ -155,7 +179,16 @@ public:
         m_native_manager.AddRouteEntry("local:.* = si:<da>");
     }
 
+    ~opal_manager() override
+    {
+        stop();
+    }
 
+
+    void Main() override
+    {
+        // main
+    }
 
     // i_call_manager interface
 public:
@@ -169,7 +202,7 @@ public:
 
     bool start() override
     {
-        if (m_sip_endpoint = nullptr)
+        if (m_sip_endpoint == nullptr)
         {
             if (m_listener)
             {
@@ -207,13 +240,13 @@ public:
     bool make_call(const std::string_view &url) override
     {
         PString token;
-        return m_native_manager.SetUpCall("pc:*", url.data(), token);
+        return m_native_manager.SetUpCall("local:*", url.data(), token);
     }
-
 
 private:
 
-    inline opal_call* get_call(const std::string& token)
+
+    inline opal_call* get_opal_call(const std::string& token)
     {
         std::shared_lock lock(m_safe_mutex);
 
@@ -225,9 +258,9 @@ private:
         return nullptr;
     }
 
-    inline opal_call* get_call(const OpalConnection &connection)
+    inline opal_call* get_opal_call(const OpalConnection &connection)
     {
-        return get_call(connection.GetToken());
+        return get_opal_call(connection.GetToken());
     }
 
     inline opal_call* create_call(OpalConnection &connection
@@ -236,10 +269,11 @@ private:
         std::unique_lock lock(m_safe_mutex);
         if (auto it = m_calls.emplace(std::piecewise_construct
                                       , std::forward_as_tuple(std::string(connection.GetToken()))
-                                      , std::forward_as_tuple(connection
-                                                              , call_direction_t::incoming)
+                                      , std::forward_as_tuple(connection)
                                ); it.second)
         {
+            on_call(it.first->second
+                    , call_event_t::new_call);
             return &it.first->second;
         }
 
@@ -249,9 +283,25 @@ private:
     inline bool remove_call(const std::string& token)
     {
         std::unique_lock lock(m_safe_mutex);
-        return m_calls.erase(token) > 0;
+        if (auto it = m_calls.find(token)
+                ; it != m_calls.end())
+        {
+            on_call(it->second
+                    , call_event_t::close_call);
+            m_calls.erase(it);
+            return true;
+        }
+        return false;
     }
 
+    inline void on_user_input(const OpalConnection& connection
+                              , const std::string& indication)
+    {
+        if (auto call = get_opal_call(connection))
+        {
+            call->on_user_input(indication);
+        }
+    }
 
     inline bool on_incoming_call(OpalConnection &connection)
     {
@@ -265,6 +315,16 @@ private:
                            , call_direction_t::outgiong) != nullptr;
     }
 
+    inline void on_call(opal_call& call
+                        , call_event_t event)
+    {
+        if (m_listener)
+        {
+            m_listener->on_call(call
+                                , event);
+        }
+    }
+
     inline void on_released_call(OpalConnection &connection)
     {
         remove_call(connection.GetToken());
@@ -273,7 +333,7 @@ private:
     bool on_open_media_stream(const OpalConnection &connection
                               , OpalMediaStream &stream)
     {
-        if (auto call = get_call(connection))
+        if (auto call = get_opal_call(connection))
         {
             return call->add_stream(stream);
         }
@@ -284,7 +344,7 @@ private:
     void on_close_media_stream(const OpalConnection &connection
                                , const OpalMediaStream &stream)
     {
-        if (auto call = get_call(connection))
+        if (auto call = get_opal_call(connection))
         {
             call->remove_stream(stream);
         }
@@ -296,7 +356,7 @@ private:
                             , PINDEX size
                             , PINDEX &length)
     {
-        if (auto call = get_call(connection))
+        if (auto call = get_opal_call(connection))
         {
             if (auto session = call->get_opal_session(mediaStream.GetSessionID()))
             {
@@ -315,7 +375,7 @@ private:
                             , PINDEX length
                             , PINDEX &written)
     {
-        if (auto call = get_call(connection))
+        if (auto call = get_opal_call(connection))
         {
             if (auto session = call->get_opal_session(mediaStream.GetSessionID()))
             {
@@ -328,6 +388,11 @@ private:
         return false;
     }
 
+
+    i_call *get_call(const string_view &call_id) override
+    {
+        return get_opal_call(std::string(call_id));
+    }
 };
 
 opal_factory::u_ptr_t opal_factory::create()

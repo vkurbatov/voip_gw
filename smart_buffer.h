@@ -34,6 +34,7 @@ public:
     void clear();
     bool is_empty() const;
     void resize(std::size_t new_size);
+    smart_buffer fork() const;
 
     // i_data_buffer inteface
 public:

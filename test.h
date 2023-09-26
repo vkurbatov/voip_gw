@@ -1,10 +1,11 @@
 #ifndef VGW_TEST_H
 #define VGW_TEST_H
 
-namespace vgw
+namespace voip
 {
 
 void test();
+void api_test();
 
 }
 

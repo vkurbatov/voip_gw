@@ -10,6 +10,9 @@ class opal_video_frame_ref : public i_video_frame
 {
     i_data_buffer&      m_opal_video_buffer;
 public:
+
+    static std::size_t opal_video_header_size();
+
     opal_video_frame_ref(i_data_buffer& buffer);
 
     // i_video_frame interface
@@ -37,6 +40,10 @@ public:
     bool is_valid() const;
     const std::string &format() const override;
     void set_format(const std::string_view &format) override;
+
+    // i_media_frame interface
+public:
+    i_media_frame::u_ptr_t clone() const override;
 };
 
 }

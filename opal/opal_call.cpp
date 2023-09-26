@@ -1,15 +1,16 @@
 #include "opal_call.h"
 #include <opal/connection.h>
 #include <opal/call.h>
+#include <rtp/rtpconn.h>
+
+#include "voip_control.h"
 
 namespace voip
 {
 
 opal_call::opal_call(OpalConnection &native_connection
-                     , call_direction_t direction
                      , i_listener* listener)
     : m_native_connection(native_connection)
-    , m_direction(direction)
     , m_listener(listener)
 {
 
@@ -63,6 +64,14 @@ OpalCall &opal_call::native_call() const
     return m_native_connection.GetCall();
 }
 
+void opal_call::on_user_input(const std::string &indication)
+{
+    if (m_listener)
+    {
+        m_listener->on_control(voip_control_tone_t(indication));
+    }
+}
+
 void opal_call::set_listener(i_listener *listener)
 {
     m_listener = listener;
@@ -75,7 +84,9 @@ voip_protocol_t opal_call::protocol() const
 
 call_direction_t opal_call::direction() const
 {
-    return m_direction;
+    return m_native_connection.IsOriginating()
+            ? call_direction_t::outgiong
+            : call_direction_t::incoming;
 }
 
 i_media_session *opal_call::get_session(std::size_t session_id)
@@ -103,6 +114,38 @@ bool opal_call::is_established() const
     return m_native_connection.IsEstablished();
 }
 
+bool opal_call::control(const voip_control_t& control)
+{
+    if (control.is_valid())
+    {
+        switch(control.control_id)
+        {
+            case voip_control_id_t::hangup_call:
+            {
+                m_native_connection.ClearCall();
+                return true;
+            }
+            break;
+            case voip_control_id_t::tone:
+            {
+                auto& control_tone = static_cast<const voip_control_tone_t&>(control);
+                auto& native_call = m_native_connection.GetCall();
+                for (auto idx = 0; idx < native_call.GetConnectionCount(); idx++)
+                {
+                    if (auto conn = native_call.GetConnectionAs<OpalRTPConnection>(idx))
+                    {
+                        return conn->SendUserInputString(PString(control_tone.tone_string));
+                    }
+                }
+            }
+            break;
+            default:;
+        }
+    }
+
+    return false;
+}
+
 opal_media_session* opal_call::query_opal_session(std::size_t session_id
                                                   , media_type_t media_type)
 {
@@ -128,7 +171,7 @@ opal_media_session* opal_call::query_opal_session(std::size_t session_id
 
 bool opal_call::remove_session(std::size_t session_id)
 {
-    return m_sessions.erase(session_id) >= 0;
+    return m_sessions.erase(session_id) > 0;
 }
 
 void opal_call::on_add_session(opal_media_session &session)
