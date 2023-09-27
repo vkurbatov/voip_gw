@@ -15,7 +15,6 @@ struct voip_control_t;
 class i_call
 {
 public:
-
     class i_listener
     {
     public:

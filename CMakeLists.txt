@@ -34,8 +34,6 @@ link_directories(
 
 set(SOURCES
     main.cpp
-    test.cpp
-    api_test.cpp
     stream_metrics.cpp
     video_frame_info.cpp
     audio_frame_info.cpp
@@ -45,7 +43,11 @@ set(SOURCES
     audio_frame_impl.cpp
     video_frame_impl.cpp
     voip_control.cpp
+    codec_info.cpp
     call_manager_config.cpp
+    utils/frame_queue.cpp
+    utils/adaptive_delay.cpp
+    opal/opal_utils.cpp
     opal/opal_types.cpp
     opal/opal_video_frame.cpp
     opal/opal_factory.cpp
@@ -69,6 +71,7 @@ set(PUBLIC_HEADERS
     i_media_frame.h
     i_audio_frame.h
     i_video_frame.h
+    codec_info.h
     call_manager_config.h
     audio_frame_info.h
     video_frame_info.h
@@ -78,13 +81,15 @@ set(PUBLIC_HEADERS
 )
 
 set(PRIVATE_HEADERS
-    test.h
     smart_buffer.h
     const_data_buffer.h
     mutable_data_buffer.h
     audio_frame_impl.h
     video_frame_impl.h
     voip_control.h
+    utils/frame_queue.h
+    utils/adaptive_delay.h
+    opal/opal_utils.h
     opal/opal_video_frame.h
     opal/opal_factory.h
     opal/opal_call.h
@@ -104,12 +109,18 @@ target_link_libraries(${PROJECT_NAME}
     )
 
 set(TEST_SOURCES
+    test/api_test.cpp
     test/main.cpp
+)
+
+set(TEST_HEADERS
+    test/api_test.h
 )
 
 
 add_executable(${TEST_PROJECT_NAME}
     ${TEST_SOURCES}
+    ${TEST_HEADERS}
 )
 
 target_link_libraries(${TEST_PROJECT_NAME}

@@ -32,7 +32,7 @@ uint32_t opal_media_stream::opal_media_format::channels() const
 
 string opal_media_stream::opal_media_format::name() const
 {
-    return m_native_stream.GetMediaFormat().GetEncodingName();
+    return m_native_stream.GetMediaFormat().GetName();
 }
 
 media_type_t opal_media_stream::get_media_type(const OpalMediaStream &opal_stream)
@@ -64,6 +64,7 @@ opal_media_stream::opal_media_stream(opal_media_session &session
     : m_session(session)
     , m_native_stream(native_stream)
     , m_format(m_native_stream)
+    , m_opal_statistic(std::make_unique<OpalMediaStatistics>())
 {
     m_session.on_add_stream(*this);
 }
@@ -97,27 +98,44 @@ i_media_session& opal_media_stream::session() const
 
 bool opal_media_stream::get_metrics(stream_metrics_t &metrics) const
 {
-    OpalMediaStatistics opal_statistic;
-    m_native_stream.GetStatistics(opal_statistic);
-    metrics.octets = opal_statistic.m_totalBytes;
-    metrics.frames = opal_statistic.m_totalFrames;
-    metrics.bitrate = opal_statistic.GetBitRate();
-    metrics.framerate = opal_statistic.GetFrameRate();
-    metrics.packets = opal_statistic.m_totalPackets;
-    metrics.lost = opal_statistic.m_packetsLost;
-    metrics.jitter_ms = opal_statistic.m_averageJitter;
-    metrics.rtt_ms = opal_statistic.m_roundTripTime;
-    metrics.format = std::string(opal_statistic.m_mediaFormat);
-
-    if (opal_statistic.m_mediaType == OpalMediaType::Video())
+    if (m_opal_statistic)
     {
-        metrics.format.append(":")
-                .append(std::to_string(opal_statistic.m_frameWidth))
-                .append(":")
-                .append(std::to_string(opal_statistic.m_frameHeight));
+        OpalMediaStatistics& opal_statistic = *m_opal_statistic;
+        opal_statistic.Update(m_native_stream);
+        metrics.octets = opal_statistic.m_totalBytes;
+        metrics.frames = opal_statistic.m_totalFrames;
+        metrics.bitrate = opal_statistic.GetBitRate();
+        metrics.framerate = opal_statistic.GetFrameRate();
+        metrics.packets = opal_statistic.m_totalPackets;
+        metrics.lost = opal_statistic.m_packetsLost;
+        metrics.jitter_ms = opal_statistic.m_averageJitter;
+        metrics.rtt_ms = opal_statistic.m_roundTripTime;
+        metrics.format = std::string(opal_statistic.m_mediaFormat);
+
+        switch(m_format.type())
+        {
+            case media_type_t::audio:
+            {
+                metrics.format.append(":")
+                        .append(std::to_string(m_format.sample_rate()))
+                        .append("/")
+                        .append(std::to_string(m_format.channels()));
+            }
+            break;
+            case media_type_t::video:
+            {
+                metrics.format.append(":")
+                        .append(std::to_string(opal_statistic.m_frameWidth))
+                        .append(":")
+                        .append(std::to_string(opal_statistic.m_frameHeight));
+            }
+            break;
+            default:;
+        }
+
+        return true;
     }
-    //opal_statistic.m_mediaFormat
-    return true;
+    return false;
 }
 
 }

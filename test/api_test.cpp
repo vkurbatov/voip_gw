@@ -1,4 +1,4 @@
-#include "test.h"
+#include "api_test.h"
 
 #include "opal/opal_factory.h"
 #include "opal/opal_manager_config.h"
@@ -7,93 +7,59 @@
 #include "i_video_frame.h"
 #include "i_audio_frame.h"
 
+#include "utils/frame_queue.h"
+
 #include "voip_control.h"
 #include "stream_metrics.h"
 
 #include <thread>
-#include <shared_mutex>
 #include <iostream>
-#include <queue>
-#include <condition_variable>
 #include <cstring>
 
-namespace voip
+using namespace voip;
+
+class frame_queue_adapter : public frame_queue
 {
-
-class frame_queue
-{
-
-    constexpr static std::size_t max_queue_size = 5;
-
-    using frame_queue_t = std::queue<i_media_frame::u_ptr_t>;
-
-    mutable std::mutex          m_safe_mutex;
-    frame_queue_t               m_queue;
-    std::condition_variable     m_signal;
-
 public:
-    frame_queue()
-    {
-
-    }
-
-    ~frame_queue()
+    frame_queue_adapter()
+        : frame_queue(5)
     {
 
     }
 
     std::size_t push_frame(const i_media_frame& frame)
     {
-        std::lock_guard lock(m_safe_mutex);
+        std::size_t result = 0;
+
         if (auto clone_frame = frame.clone())
         {
-            auto size = clone_frame->size();
-            m_queue.emplace(std::move(std::move(clone_frame)));
-
-            while(m_queue.size() > max_queue_size)
-            {
-                m_queue.pop();
-            }
-
-            m_signal.notify_all();
-
-            return size;
+            result = clone_frame->size();
+            frame_queue::push_frame(std::move(clone_frame));
         }
-        return 0;
+
+        return result;
     }
 
-    std::size_t pop_frame(i_media_frame& frame
+    std::size_t pop_frame(i_media_frame& dst_frame
                           , std::uint32_t timeout_ms = 0)
     {
-        std::unique_lock lock(m_safe_mutex);
-
-        if (timeout_ms > 0
-                && m_queue.empty())
+        if (auto src_frame = frame_queue::pop_frame(timeout_ms))
         {
-            m_signal.wait_for(lock
-                              , std::chrono::milliseconds(timeout_ms));
-        }
-
-        if (!m_queue.empty())
-        {
-            auto qframe = std::move(m_queue.front());
-            m_queue.pop();
-
-            if (qframe != nullptr
-                    && qframe->type() == frame.type())
+            if (src_frame->type() == dst_frame.type())
             {
-                switch(frame.type())
+                switch(dst_frame.type())
                 {
                     case media_type_t::audio:
                     {
-                        auto& audio_frame_dst = static_cast<i_audio_frame&>(frame);
-                        auto& audio_frame_src = static_cast<i_audio_frame&>(*qframe);
+                        auto& audio_frame_dst = static_cast<i_audio_frame&>(dst_frame);
+                        auto& audio_frame_src = static_cast<i_audio_frame&>(*src_frame);
 
-                        if (audio_frame_dst.size() >= audio_frame_src.size()
-                                && audio_frame_dst.format() == audio_frame_src.format())
+                        if (audio_frame_dst.format() == audio_frame_src.format()
+                                && audio_frame_dst.size() >= audio_frame_src.size())
                         {
                             audio_frame_dst.set_sample_rate(audio_frame_src.sample_rate());
                             audio_frame_dst.set_channels(audio_frame_src.channels());
+
 
                             if (auto data_dst = audio_frame_dst.map())
                             {
@@ -108,11 +74,11 @@ public:
                     break;
                     case media_type_t::video:
                     {
-                        auto& video_frame_dst = static_cast<i_video_frame&>(frame);
-                        auto& video_frame_src = static_cast<i_video_frame&>(*qframe);
+                        auto& video_frame_dst = static_cast<i_video_frame&>(dst_frame);
+                        auto& video_frame_src = static_cast<i_video_frame&>(*src_frame);
 
-                        if (video_frame_dst.size() >= video_frame_src.size()
-                                && video_frame_dst.format() >= video_frame_src.format())
+                        if (video_frame_dst.format() == video_frame_src.format()
+                                && video_frame_dst.size() >= video_frame_dst.size())
                         {
                             video_frame_dst.set_left(video_frame_src.left());
                             video_frame_dst.set_top(video_frame_src.top());
@@ -134,24 +100,20 @@ public:
                 }
             }
         }
+
         return 0;
     }
-
-    std::size_t pending_frames() const
-    {
-        std::lock_guard lock(m_safe_mutex);
-        return m_queue.size();
-    }
 };
+
 
 class test_listener: public i_call_manager::i_listener
         , public i_call::i_listener
         , public i_media_session::i_listener
 {
-    frame_queue     m_audio_queue;
-    frame_queue     m_video_queue;
+    frame_queue_adapter     m_audio_queue;
+    frame_queue_adapter     m_video_queue;
 
-    i_call*         m_call = nullptr;
+    i_call*                 m_call = nullptr;
 
 
 public:
@@ -171,7 +133,7 @@ public:
         return m_call;
     }
 
-    frame_queue* get_queue(std::size_t session_id)
+    frame_queue_adapter* get_queue(std::size_t session_id)
     {
         switch(session_id)
         {
@@ -241,13 +203,8 @@ public:
     {
         if (auto queue = get_queue(stream.session().id()))
         {
-            if (auto result = queue->pop_frame(frame
-                                               , 100))
-            {
-                return result;
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            return queue->pop_frame(frame
+                                    , 500);
         }
 
         return 0;
@@ -258,10 +215,7 @@ public:
     {
         if (auto queue = get_queue(stream.session().id()))
         {
-            if (auto result = queue->push_frame(frame))
-            {
-                return result;
-            }
+            return queue->push_frame(frame);
         }
         return 0;
     }
@@ -302,11 +256,33 @@ void api_test()
 
     opal_factory factory;
 
+    config.max_bitrate = 1024000; // not work!!!
+
+    config.audio_codecs.push_back("G7221");
+    config.video_codecs.push_back("H264");
+
+    config.min_rtp_port = 10000;
+    config.max_rtp_port = 10100;
+
+    config.max_rtp_packet_size = 900;
+
     auto count = 1000;
 
     if (auto manager = factory.create_manager(config))
     {
+        std::cout << "Supported codecs: " << std::endl;
+        for (const auto& c : manager->active_codecs())
+        {
+            std::cout << (c.type == media_type_t::audio ? "audio" : (c.type == media_type_t::undefined ? "undefined" : "video"))
+                      << ", name: " << c.name
+                      << ", full name: " << c.full_name
+                      << ", desc: " << c.description
+                      << ", sample_rate: " << c.sample_rate
+                      << std::endl;
+        }
+
         manager->set_listener(&listener);
+
         if (manager->start())
         {
             manager->make_call("sip:username@192.168.0.104:5060");
@@ -354,6 +330,4 @@ void api_test()
             manager->stop();
         }
     }
-}
-
 }

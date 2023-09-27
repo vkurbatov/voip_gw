@@ -2,6 +2,7 @@
 #define VOIP_I_CALL_FACTORY_H
 
 #include "i_call_manager.h"
+#include "codec_info.h"
 
 namespace voip
 {
@@ -16,6 +17,7 @@ public:
 
     virtual ~i_call_factory() = default;
     virtual i_call_manager::u_ptr_t create_manager(const call_manager_config_t& config) = 0;
+    virtual codec_info_t::array_t supported_codecs() = 0;
 };
 
 }

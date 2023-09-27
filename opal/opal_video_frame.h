@@ -9,11 +9,13 @@ namespace voip
 class opal_video_frame_ref : public i_video_frame
 {
     i_data_buffer&      m_opal_video_buffer;
+    std::string         m_format;
 public:
 
     static std::size_t opal_video_header_size();
 
-    opal_video_frame_ref(i_data_buffer& buffer);
+    opal_video_frame_ref(i_data_buffer& buffer
+                         , const std::string_view& format = "YUV420P");
 
     // i_video_frame interface
 public:

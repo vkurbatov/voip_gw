@@ -10,8 +10,10 @@ std::size_t opal_video_frame_ref::opal_video_header_size()
     return sizeof(PluginCodec_Video_FrameHeader);
 }
 
-opal_video_frame_ref::opal_video_frame_ref(i_data_buffer &buffer)
+opal_video_frame_ref::opal_video_frame_ref(i_data_buffer &buffer
+                                           , const std::string_view& format)
     : m_opal_video_buffer(buffer)
+    , m_format(format)
 {
 
 }
@@ -97,13 +99,12 @@ bool opal_video_frame_ref::is_valid() const
 
 const std::string &opal_video_frame_ref::format() const
 {
-    static const std::string single_format = "YUV420";
-    return single_format;
+    return m_format;
 }
 
-void opal_video_frame_ref::set_format(const std::string_view& /*format*/)
+void opal_video_frame_ref::set_format(const std::string_view& format)
 {
-    // not impl
+    m_format = format;
 }
 
 i_media_frame::u_ptr_t opal_video_frame_ref::clone() const

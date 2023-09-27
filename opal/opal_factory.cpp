@@ -2,6 +2,7 @@
 #include "opal_manager_config.h"
 #include "opal_call.h"
 #include "opal_types.h"
+#include "opal_utils.h"
 
 #include <ep/localep.h>
 #include <sip/sipep.h>
@@ -16,7 +17,6 @@ namespace voip
 
 
 class opal_manager final : public i_call_manager
-        , PProcess
 {
     using shared_mutex_t = std::shared_mutex;
     using shared_lock_t = std::shared_lock<shared_mutex_t>;
@@ -35,12 +35,7 @@ class opal_manager final : public i_call_manager
                                 , true)
             , m_owner(owner)
         {
-            std::cout << "Supported media formats: " << std::endl;
-            for (auto& f : OpalTranscoder::GetPossibleFormats(GetMediaFormats()))
-            {
-                std::cout << "name " << f.GetName()
-                          << ", codec_name: " << f.GetEncodingName() << std::endl;
-            }
+
         }
 
         // OpalEndPoint interface
@@ -101,10 +96,6 @@ class opal_manager final : public i_call_manager
                               , PINDEX length
                               , PINDEX &written) override
         {
-            if (mediaStream.IsSynchronous())
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(20));
-            }
 
             return m_owner.on_write_media_data(connection
                                                , mediaStream
@@ -175,19 +166,15 @@ public:
         , m_listener(nullptr)
         , m_endpoint(*this)
     {
+        set_manager_config(m_config);
         m_native_manager.AddRouteEntry("sip.*:.* = local:");
         m_native_manager.AddRouteEntry("local:.* = si:<da>");
+
     }
 
     ~opal_manager() override
     {
         stop();
-    }
-
-
-    void Main() override
-    {
-        // main
     }
 
     // i_call_manager interface
@@ -243,8 +230,140 @@ public:
         return m_native_manager.SetUpCall("local:*", url.data(), token);
     }
 
+
+    i_call *get_call(const string_view &call_id) override
+    {
+        return get_opal_call(std::string(call_id));
+    }
+
+    codec_info_t::array_t active_codecs() const override
+    {
+        codec_info_t::array_t codecs;
+        const PStringArray& mask  = m_native_manager.GetMediaFormatMask();
+        std::set<std::string> mask_set;
+        for (auto i = 0; i < mask.GetSize(); i++)
+        {
+            mask_set.insert(mask[i]);
+        }
+
+        for (const auto& f : OpalTranscoder::GetPossibleFormats(m_endpoint.GetMediaFormats()))
+        {
+            if (f.IsTransportable())
+            {
+                if (auto enc_name = f.GetEncodingName())
+                {
+                    if (mask_set.find(f.GetName()) == mask_set.end())
+                    {
+                        codecs.emplace_back(get_media_type(f.GetMediaType())
+                                            , enc_name
+                                            , std::string(f.GetName())
+                                            , std::string(f.GetDescription())
+                                            , f.GetClockRate());
+                    }
+                }
+            }
+        }
+        return codecs;
+    }
+
 private:
 
+    void set_manager_config(const opal_manager_config_t& config)
+    {
+        if (!config.user_name.empty())
+        {
+            m_native_manager.SetDefaultUserName(config.user_name);
+        }
+
+        if (!config.display_name.empty())
+        {
+            m_native_manager.SetDefaultDisplayName(config.display_name);
+        }
+
+        if (config.min_rtp_port > 0
+                && config.min_rtp_port < config.max_rtp_port)
+        {
+            m_native_manager.SetRtpIpPorts(config.min_rtp_port, config.max_rtp_port);
+        }
+
+        if (config.max_rtp_packet_size > 0)
+        {
+            m_native_manager.SetMaxRtpPayloadSize(config.max_rtp_packet_size);
+        }
+
+        if (config.max_bitrate > 0)
+        {
+            m_endpoint.SetInitialBandwidth(OpalBandwidth::Direction::Rx
+                                                , OpalBandwidth(config.max_bitrate));
+
+            m_endpoint.SetInitialBandwidth(OpalBandwidth::Direction::Tx
+                                                , OpalBandwidth(config.max_bitrate));
+        }
+
+
+        auto is_mask_audio = !config.audio_codecs.empty();
+        auto is_mask_video = !config.video_codecs.empty();
+
+        if (is_mask_audio
+                || is_mask_video)
+        {
+            std::set<std::string> mask_set;
+            for (const auto& ac : config.audio_codecs)
+            {
+                mask_set.insert(ac);
+            }
+
+            for (const auto& vc : config.video_codecs)
+            {
+                mask_set.insert(vc);
+            }
+
+            PStringArray mask;
+
+            for (const auto& f : OpalTranscoder::GetPossibleFormats(m_endpoint.GetMediaFormats()))
+            {
+                if (f.IsTransportable())
+                {
+                    if (auto enc_name = f.GetEncodingName())
+                    {
+                        switch(get_media_type(f.GetMediaType()))
+                        {
+                            case media_type_t::audio:
+                            {
+                                if (is_mask_audio)
+                                {
+                                    if (mask_set.find(enc_name) == mask_set.end())
+                                    {
+                                        mask += f.GetName();
+                                    }
+                                }
+                            }
+                            break;
+                            case media_type_t::video:
+                            {
+                                if (is_mask_video)
+                                {
+                                    if (mask_set.find(enc_name) == mask_set.end())
+                                    {
+                                        mask += f.GetName();
+                                    }
+                                }
+                            }
+                            break;
+                            default:;
+                        }
+                    }
+                }
+            }
+
+            m_native_manager.SetMediaFormatMask(mask);
+
+        }
+
+
+        // std::set<std::string> codec_map;
+
+    }
 
     inline opal_call* get_opal_call(const std::string& token)
     {
@@ -272,6 +391,7 @@ private:
                                       , std::forward_as_tuple(connection)
                                ); it.second)
         {
+
             on_call(it.first->second
                     , call_event_t::new_call);
             return &it.first->second;
@@ -387,12 +507,32 @@ private:
 
         return false;
     }
+};
 
-
-    i_call *get_call(const string_view &call_id) override
+class opal_process : public PProcess
+{
+public:
+    using u_ptr_t = std::unique_ptr<opal_process>;
+    static u_ptr_t create()
     {
-        return get_opal_call(std::string(call_id));
+        return std::make_unique<opal_process>();
     }
+
+    opal_manager::u_ptr_t create_manager(const call_manager_config_t &config)
+    {
+        if (IsInitialised())
+        {
+            return opal_manager::create(config);
+        }
+        return nullptr;
+    }
+    // PThread interface
+public:
+    void Main() override
+    {
+
+    }
+
 };
 
 opal_factory::u_ptr_t opal_factory::create()
@@ -400,14 +540,31 @@ opal_factory::u_ptr_t opal_factory::create()
     return std::make_unique<opal_factory>();
 }
 
+opal_factory &opal_factory::get_instance()
+{
+    static opal_factory single_factory;
+    return single_factory;
+}
+
 opal_factory::opal_factory()
+    : m_opal_process(opal_process::create())
+{
+    m_opal_process->InternalMain();
+}
+
+opal_factory::~opal_factory()
 {
 
 }
 
 i_call_manager::u_ptr_t opal_factory::create_manager(const call_manager_config_t &config)
 {
-    return opal_manager::create(config);
+    return m_opal_process->create_manager(config);
+}
+
+codec_info_t::array_t opal_factory::supported_codecs()
+{
+    return get_supported_opal_codecs(media_type_t::undefined);
 }
 
 }

@@ -20,6 +20,11 @@ struct audio_frame_info_t
     bool operator == (const audio_frame_info_t& other) const;
     bool operator != (const audio_frame_info_t& other) const;
 
+    std::uint32_t bps() const;
+    std::size_t sample_size() const;
+    std::uint64_t duration_from_size(std::size_t size) const; //us
+    std::uint32_t samples_from_size(std::size_t size) const;
+
     bool is_valid() const;
 };
 

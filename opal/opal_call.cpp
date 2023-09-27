@@ -101,7 +101,7 @@ size_t opal_call::session_count() const
 
 std::string opal_call::url() const
 {
-    return m_native_connection.GetCall().GetPartyB();
+    return m_native_connection.GetCall().GetRemoteParty();
 }
 
 std::string opal_call::id() const

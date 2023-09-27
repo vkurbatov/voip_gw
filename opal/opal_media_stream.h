@@ -5,6 +5,7 @@
 #include "i_media_format.h"
 
 class OpalMediaStream;
+class OpalMediaStatistics;
 
 namespace voip
 {
@@ -13,6 +14,7 @@ class opal_media_session;
 
 class opal_media_stream : public i_media_stream
 {
+    using opal_statistic_ptr_t = std::unique_ptr<OpalMediaStatistics>;
     class opal_media_format : public i_media_format
     {
         OpalMediaStream&    m_native_stream;
@@ -29,6 +31,8 @@ class opal_media_stream : public i_media_stream
     opal_media_session&     m_session;
     OpalMediaStream&        m_native_stream;
     opal_media_format       m_format;
+    opal_statistic_ptr_t    m_opal_statistic;
+
 
 public:
 
@@ -45,7 +49,7 @@ public:
 
     ~opal_media_stream();
 
-    OpalMediaStream& native_stream() const;   
+    OpalMediaStream& native_stream() const;
 
     // i_media_stream interface
 public:

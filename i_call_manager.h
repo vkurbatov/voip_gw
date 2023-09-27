@@ -3,6 +3,7 @@
 
 #include "i_call.h"
 #include <string_view>
+#include "codec_info.h"
 
 namespace voip
 {
@@ -27,6 +28,7 @@ public:
 
     using u_ptr_t = std::unique_ptr<i_call_manager>;
     using s_ptr_t = std::shared_ptr<i_call_manager>;
+
     virtual ~i_call_manager() = default;
 
     virtual void set_listener(i_listener* listener) = 0;
@@ -35,6 +37,7 @@ public:
     virtual bool is_started() const = 0;
     virtual bool make_call(const std::string_view& url) = 0;
     virtual i_call* get_call(const std::string_view& call_id) = 0;
+    virtual codec_info_t::array_t active_codecs() const = 0;
 
 };
 

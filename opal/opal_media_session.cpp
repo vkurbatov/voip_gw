@@ -109,8 +109,8 @@ opal_media_stream *opal_media_session::get_opal_stream(stream_type_t stream_type
 opal_media_stream *opal_media_session::get_opal_stream(const OpalMediaStream &opal_stream) const
 {
     return get_opal_stream(opal_stream.IsSource()
-                           ? stream_type_t::outbound
-                           : stream_type_t::inbound);
+                            ? stream_type_t::outbound
+                            : stream_type_t::inbound);
 }
 
 size_t opal_media_session::write_data(const void *data
@@ -118,32 +118,45 @@ size_t opal_media_session::write_data(const void *data
 {
     const_data_buffer buffer(data
                              , size);
-    if (m_outbound_stream != nullptr)
+    if (auto stream = get_opal_stream(stream_type_t::inbound))
     {
+        std::size_t result = 0;
+        std::uint64_t delay = 0;
         switch(m_media_type)
         {
             case media_type_t::audio:
             {
                 audio_frame_impl_ref audio_frame(buffer
-                                                 , detail::create_audio_info(m_outbound_stream->format())
+                                                 , detail::create_audio_info(stream->format())
                                                  );
-                return on_write_frame(*m_outbound_stream
-                                      , audio_frame);
+                result = on_write_frame(*stream
+                                        , audio_frame);
+                delay = audio_frame.frame_info().duration_from_size(result);
             }
             break;
             case media_type_t::video:
             {
-                opal_video_frame_ref video_frame(buffer);
+                opal_video_frame_ref video_frame(buffer
+                                                 , stream->format().name());
 
-                if (auto write_size = on_write_frame(*m_outbound_stream
+                if (auto write_size = on_write_frame(*stream
                                                      , video_frame))
                 {
-                    return write_size + opal_video_frame_ref::opal_video_header_size();
+                    result = write_size + opal_video_frame_ref::opal_video_header_size();
                 }
             }
             break;
             default:;
         }
+
+        if (result > 0
+                && delay > 0
+                && stream->native_stream().IsSynchronous())
+        {
+            m_delay_writer.wait(std::chrono::microseconds(delay));
+        }
+
+        return result;
     }
     return 0;
 }
@@ -153,32 +166,45 @@ size_t opal_media_session::read_data(void *data
 {
     mutable_data_buffer buffer(data
                                , size);
-    if (m_inbound_stream != nullptr)
+    if (auto stream = get_opal_stream(stream_type_t::outbound))
     {
+        std::size_t result = 0;
+        std::uint64_t delay = 0;
         switch(m_media_type)
         {
             case media_type_t::audio:
             {
                 audio_frame_impl_ref audio_frame(buffer
-                                                 , detail::create_audio_info(m_outbound_stream->format())
+                                                 , detail::create_audio_info(stream->format())
                                                  );
-                return on_read_frame(*m_inbound_stream
-                                      , audio_frame);
+                result = on_read_frame(*stream
+                                       , audio_frame);
+                delay = audio_frame.frame_info().duration_from_size(result);
             }
             break;
             case media_type_t::video:
             {
-                opal_video_frame_ref video_frame(buffer);
+                opal_video_frame_ref video_frame(buffer
+                                                 , stream->format().name());
 
-                if (auto read_size = on_read_frame(*m_outbound_stream
-                                              , video_frame))
+                if (auto read_size = on_read_frame(*stream
+                                                   , video_frame))
                 {
-                    return read_size + opal_video_frame_ref::opal_video_header_size();
+                    result = read_size + opal_video_frame_ref::opal_video_header_size();
                 }
             }
             break;
             default:;
         }
+
+        if (result > 0
+                && delay > 0
+                && stream->native_stream().IsSynchronous())
+        {
+            m_delay_reader.wait(std::chrono::microseconds(delay));
+        }
+
+        return result;
     }
     return 0;
 }

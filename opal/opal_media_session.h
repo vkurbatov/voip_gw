@@ -3,6 +3,7 @@
 
 #include "i_media_session.h"
 #include "opal_media_stream.h"
+#include "utils/adaptive_delay.h"
 
 class OpalMediaStream;
 
@@ -21,6 +22,9 @@ class opal_media_session : public i_media_session
 
     opal_media_stream::u_ptr_t  m_inbound_stream;
     opal_media_stream::u_ptr_t  m_outbound_stream;
+
+    adaptive_delay              m_delay_writer;
+    adaptive_delay              m_delay_reader;
 
     friend class opal_media_stream;
 
