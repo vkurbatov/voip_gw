@@ -117,10 +117,12 @@ target_link_libraries(${PROJECT_NAME}
 
 set(TEST_SOURCES
     test/api_test.cpp
+    test/c_api_test.c
     test/main.cpp
 )
 
 set(TEST_HEADERS
+    test/c_api_test.h
     test/api_test.h
 )
 

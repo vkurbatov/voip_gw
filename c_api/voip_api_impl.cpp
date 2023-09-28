@@ -181,7 +181,7 @@ class api_adapter: public i_call_manager::i_listener
 
     i_call_factory::u_ptr_t     m_factory;
     i_call_manager::u_ptr_t     m_manager;
-    message_callback_t*         m_message_callback;
+    message_callback_t          m_message_callback;
     vgw_handle_t                m_manager_handle;
 
     call_container              m_calls;
@@ -208,7 +208,7 @@ public:
     }
 
     vgw_handle_t create_manager(const vgw_call_manager_config_t& config
-                                , message_callback_t* message_callback)
+                                , message_callback_t message_callback)
     {
         if (m_manager == nullptr
                 && message_callback != nullptr)
@@ -514,7 +514,7 @@ public:
 }
 
 vgw_handle_t create_manager(const vgw_call_manager_config_t* manager_config
-                            , message_callback_t* callback_manager)
+                            , message_callback_t callback_manager)
 {
     if (manager_config != nullptr
             && callback_manager != nullptr)

@@ -218,11 +218,11 @@ public:
         if (m_sip_endpoint != nullptr)
         {
             m_listener->on_stopped();
+
             if (m_sip_endpoint != nullptr)
             {
                 m_sip_endpoint->RemoveListener(nullptr);
             }
-            m_sip_endpoint.reset();
             m_calls.clear();
             return true;
         }
