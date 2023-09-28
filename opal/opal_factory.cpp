@@ -38,6 +38,11 @@ class opal_manager final : public i_call_manager
 
         }
 
+        ~opal_endpoint()
+        {
+
+        }
+
         // OpalEndPoint interface
     public:
 
@@ -131,6 +136,7 @@ class opal_manager final : public i_call_manager
     opal_endpoint               m_endpoint;
     sip_endpoint_ptr_t          m_sip_endpoint;
 
+    std::size_t                 m_call_indexes;
     call_map_t                  m_calls;
 
 public:
@@ -153,7 +159,7 @@ public:
     static u_ptr_t create(const call_manager_config_t &config)
     {
         if (config.is_valid()
-                && config.type == opal_type)
+                && config.engine_type == opal_engine_type)
         {
             return std::make_unique<opal_manager>(static_cast<const opal_manager_config_t&>(config));
         }
@@ -165,6 +171,7 @@ public:
         : m_config(config)
         , m_listener(nullptr)
         , m_endpoint(*this)
+        , m_call_indexes(0)
     {
         set_manager_config(m_config);
         m_native_manager.AddRouteEntry("sip.*:.* = local:");
@@ -211,6 +218,10 @@ public:
         if (m_sip_endpoint != nullptr)
         {
             m_listener->on_stopped();
+            if (m_sip_endpoint != nullptr)
+            {
+                m_sip_endpoint->RemoveListener(nullptr);
+            }
             m_sip_endpoint.reset();
             m_calls.clear();
             return true;
@@ -392,6 +403,7 @@ private:
                                ); it.second)
         {
 
+            m_call_indexes++;
             on_call(it.first->second
                     , call_event_t::new_call);
             return &it.first->second;

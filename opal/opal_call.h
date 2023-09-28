@@ -1,4 +1,4 @@
-#ifndef VOIP_OPAL_CALL_H
+﻿#ifndef VOIP_OPAL_CALL_H
 #define VOIP_OPAL_CALL_H
 
 #include "i_call.h"
@@ -19,6 +19,7 @@ class opal_call : public i_call
     OpalConnection&     m_native_connection;
 
     i_listener*         m_listener;
+    std::size_t         m_index;
 
     session_map_t       m_sessions;
 
@@ -27,7 +28,8 @@ class opal_call : public i_call
 
 public:
     opal_call(OpalConnection& native_connection
-              , i_listener* listener = nullptr);
+              , i_listener* listener = nullptr
+              , std::size_t index = 0);
 
     bool add_stream(OpalMediaStream& native_stream);
     bool remove_stream(const OpalMediaStream& native_stream);
@@ -50,6 +52,7 @@ public:
     std::string id() const override;
     bool is_established() const override;
     bool control(const voip_control_t& control) override;
+    std::size_t index() const override;
 
 private:
 
@@ -60,6 +63,7 @@ private:
 
     void on_add_session(opal_media_session& session);
     void on_remove_session(opal_media_session& session);
+
 
 
 };

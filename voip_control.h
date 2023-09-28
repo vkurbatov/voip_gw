@@ -18,9 +18,9 @@ public:
     virtual bool is_valid() const;
 };
 
-struct voip_control_hangup_call : public voip_control_t
+struct voip_control_hangup_call_t : public voip_control_t
 {
-    voip_control_hangup_call();
+    voip_control_hangup_call_t();
 
 public:
     bool is_valid() const override;

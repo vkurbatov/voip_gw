@@ -6,7 +6,7 @@
 namespace voip
 {
 
-constexpr std::string_view opal_type { "opal" };
+constexpr std::string_view opal_engine_type { "opal" };
 
 }
 

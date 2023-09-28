@@ -169,7 +169,6 @@ size_t opal_media_session::read_data(void *data
     if (auto stream = get_opal_stream(stream_type_t::outbound))
     {
         std::size_t result = 0;
-        std::uint64_t delay = 0;
         switch(m_media_type)
         {
             case media_type_t::audio:
@@ -179,7 +178,7 @@ size_t opal_media_session::read_data(void *data
                                                  );
                 result = on_read_frame(*stream
                                        , audio_frame);
-                delay = audio_frame.frame_info().duration_from_size(result);
+                // delay = audio_frame.frame_info().duration_from_size(result);
             }
             break;
             case media_type_t::video:
@@ -197,12 +196,13 @@ size_t opal_media_session::read_data(void *data
             default:;
         }
 
+        /*
         if (result > 0
                 && delay > 0
                 && stream->native_stream().IsSynchronous())
         {
             m_delay_reader.wait(std::chrono::microseconds(delay));
-        }
+        }*/
 
         return result;
     }

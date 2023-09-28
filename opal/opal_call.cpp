@@ -9,9 +9,11 @@ namespace voip
 {
 
 opal_call::opal_call(OpalConnection &native_connection
-                     , i_listener* listener)
+                     , i_listener* listener
+                     , std::size_t index)
     : m_native_connection(native_connection)
     , m_listener(listener)
+    , m_index(index)
 {
 
 }
@@ -68,7 +70,7 @@ void opal_call::on_user_input(const std::string &indication)
 {
     if (m_listener)
     {
-        m_listener->on_control(voip_control_tone_t(indication));
+        m_listener->on_control(*this, voip_control_tone_t(indication));
     }
 }
 
@@ -144,6 +146,11 @@ bool opal_call::control(const voip_control_t& control)
     }
 
     return false;
+}
+
+size_t opal_call::index() const
+{
+    return m_index;
 }
 
 opal_media_session* opal_call::query_opal_session(std::size_t session_id

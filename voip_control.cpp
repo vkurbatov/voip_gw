@@ -16,14 +16,14 @@ bool voip_control_t::is_valid() const
     return control_id != voip_control_id_t::undefined;
 }
 
-voip_control_hangup_call::voip_control_hangup_call()
+voip_control_hangup_call_t::voip_control_hangup_call_t()
     : voip_control_t(voip_control_id_t::hangup_call
                      , "hangup_call")
 {
 
 }
 
-bool voip_control_hangup_call::is_valid() const
+bool voip_control_hangup_call_t::is_valid() const
 {
     return control_id == voip_control_id_t::hangup_call;
 }

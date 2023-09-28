@@ -1,7 +1,7 @@
 #include "api_test.h"
 
-#include "opal/opal_factory.h"
 #include "opal/opal_manager_config.h"
+#include "i_engine.h"
 #include "i_media_session.h"
 #include "i_media_stream.h"
 #include "i_video_frame.h"
@@ -236,7 +236,7 @@ public:
 
     // i_listener interface
 public:
-    void on_control(const voip_control_t &control) override
+    void on_control(i_call& call, const voip_control_t &control) override
     {
         switch(control.control_id)
         {
@@ -254,7 +254,7 @@ void api_test()
 
     opal_manager_config_t config;
 
-    opal_factory factory;
+    auto factory = i_engine::get_instance().query_factory("opal");
 
     config.max_bitrate = 1024000; // not work!!!
 
@@ -268,7 +268,7 @@ void api_test()
 
     auto count = 1000;
 
-    if (auto manager = factory.create_manager(config))
+    if (auto manager = factory->create_manager(config))
     {
         std::cout << "Supported codecs: " << std::endl;
         for (const auto& c : manager->active_codecs())

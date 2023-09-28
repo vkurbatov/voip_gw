@@ -8,9 +8,9 @@ namespace voip
 
 struct call_manager_config_t
 {
-    std::string     type;
+    std::string     engine_type;
 
-    call_manager_config_t(const std::string_view& type = {});
+    call_manager_config_t(const std::string_view& engine_type = {});
 
     virtual bool operator == (const call_manager_config_t& other) const;
     virtual bool operator != (const call_manager_config_t& other) const;

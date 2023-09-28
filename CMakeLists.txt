@@ -45,8 +45,10 @@ set(SOURCES
     voip_control.cpp
     codec_info.cpp
     call_manager_config.cpp
+    engine_impl.cpp
     utils/frame_queue.cpp
     utils/adaptive_delay.cpp
+    utils/common_utils.cpp
     opal/opal_utils.cpp
     opal/opal_types.cpp
     opal/opal_video_frame.cpp
@@ -55,12 +57,14 @@ set(SOURCES
     opal/opal_media_session.cpp
     opal/opal_media_stream.cpp
     opal/opal_manager_config.cpp
+    c_api/voip_api.h
 )
 
 set(PUBLIC_HEADERS
     common_types.h
     voip_types.h
     media_types.h
+    i_engine.h
     i_data_buffer.h
     i_call.h
     i_call_manager.h
@@ -87,8 +91,11 @@ set(PRIVATE_HEADERS
     audio_frame_impl.h
     video_frame_impl.h
     voip_control.h
+    engine_impl.h
+    c_api/voip_api_impl.cpp
     utils/frame_queue.h
     utils/adaptive_delay.h
+    utils/common_utils.h
     opal/opal_utils.h
     opal/opal_video_frame.h
     opal/opal_factory.h

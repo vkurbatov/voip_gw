@@ -3,15 +3,15 @@
 namespace voip
 {
 
-call_manager_config_t::call_manager_config_t(const std::string_view &type)
-    : type(type)
+call_manager_config_t::call_manager_config_t(const std::string_view &engine_type)
+    : engine_type(engine_type)
 {
 
 }
 
 bool call_manager_config_t::operator ==(const call_manager_config_t &other) const
 {
-    return type == other.type;
+    return engine_type == other.engine_type;
 }
 
 bool call_manager_config_t::operator !=(const call_manager_config_t &other) const

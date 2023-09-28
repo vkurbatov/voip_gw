@@ -14,7 +14,7 @@ opal_manager_config_t::opal_manager_config_t(const std::string_view& user_name
                                              , std::uint16_t max_rtp_packet_size
                                              , const codec_array_t &audio_codecs
                                              , const codec_array_t &video_codecs)
-    : call_manager_config_t(opal_type)
+    : call_manager_config_t(opal_engine_type)
     , user_name(user_name)
     , display_name(display_name)
     , max_bitrate(max_bitrate)
@@ -30,12 +30,12 @@ opal_manager_config_t::opal_manager_config_t(const std::string_view& user_name
 
 bool opal_manager_config_t::operator ==(const call_manager_config_t &other) const
 {
-    return other.type == opal_type;
+    return other.engine_type == opal_engine_type;
 }
 
 bool opal_manager_config_t::is_valid() const
 {
-    return type == opal_type;
+    return engine_type == opal_engine_type;
 }
 
 }
