@@ -52,12 +52,15 @@ class opal_manager final : public i_call_manager
         {
             return m_owner.on_open_media_stream(connection
                                                 , stream);
+            OpalLocalEndPoint::OnOpenMediaStream(connection
+                                                 , stream);
         }
 
         void OnClosedMediaStream(const OpalMediaStream &stream) override
         {
             m_owner.on_close_media_stream(stream.GetConnection()
                                          , stream);
+            OpalLocalEndPoint::OnClosedMediaStream(stream);
         }
 
         // OpalLocalEndPoint interface
@@ -113,6 +116,7 @@ class opal_manager final : public i_call_manager
         void OnReleased(OpalConnection &connection) override
         {
             m_owner.on_released_call(connection);
+            OpalLocalEndPoint::OnReleased(connection);
         }
 
         // OpalLocalEndPoint interface
@@ -133,11 +137,13 @@ class opal_manager final : public i_call_manager
     opal_manager_config_t       m_config;
     i_listener*                 m_listener;
     OpalManager                 m_native_manager;
-    opal_endpoint               m_endpoint;
-    sip_endpoint_ptr_t          m_sip_endpoint;
+    opal_endpoint*              m_endpoint;
+    SIPEndPoint*                m_sip_endpoint;
 
     std::size_t                 m_call_indexes;
     call_map_t                  m_calls;
+
+    bool                        m_started;
 
 public:
 
@@ -170,8 +176,10 @@ public:
     opal_manager(const opal_manager_config_t& config)
         : m_config(config)
         , m_listener(nullptr)
-        , m_endpoint(*this)
+        , m_endpoint(new opal_endpoint(*this))
+        , m_sip_endpoint(new SIPEndPoint(m_native_manager))
         , m_call_indexes(0)
+        , m_started(false)
     {
         set_manager_config(m_config);
         m_native_manager.AddRouteEntry("sip.*:.* = local:");
@@ -181,6 +189,7 @@ public:
 
     ~opal_manager() override
     {
+
         stop();
     }
 
@@ -188,7 +197,7 @@ public:
 public:
     void set_listener(i_listener *listener) override
     {
-        if (m_sip_endpoint == nullptr)
+        if (!m_started)
         {
             m_listener = listener;
         }
@@ -196,14 +205,13 @@ public:
 
     bool start() override
     {
-        if (m_sip_endpoint == nullptr)
+        if (!m_started)
         {
             if (m_listener)
             {
-                m_sip_endpoint = create_sip_endpoint(m_native_manager);
-
-                if (m_sip_endpoint != nullptr)
+                if (m_sip_endpoint->StartListeners(PStringArray()))
                 {
+                    m_started = true;
                     m_listener->on_started();
                     return true;
                 }
@@ -215,14 +223,12 @@ public:
 
     bool stop() override
     {
-        if (m_sip_endpoint != nullptr)
+        if (m_started)
         {
+            m_started = false;
             m_listener->on_stopped();
-
-            if (m_sip_endpoint != nullptr)
-            {
-                m_sip_endpoint->RemoveListener(nullptr);
-            }
+            m_native_manager.ClearAllCalls(OpalConnection::EndedByLocalUser, true);
+            m_sip_endpoint->RemoveListener(nullptr);
             m_calls.clear();
             return true;
         }
@@ -257,7 +263,7 @@ public:
             mask_set.insert(mask[i]);
         }
 
-        for (const auto& f : OpalTranscoder::GetPossibleFormats(m_endpoint.GetMediaFormats()))
+        for (const auto& f : OpalTranscoder::GetPossibleFormats(m_endpoint->GetMediaFormats()))
         {
             if (f.IsTransportable())
             {
@@ -304,10 +310,10 @@ private:
 
         if (config.max_bitrate > 0)
         {
-            m_endpoint.SetInitialBandwidth(OpalBandwidth::Direction::Rx
+            m_endpoint->SetInitialBandwidth(OpalBandwidth::Direction::Rx
                                                 , OpalBandwidth(config.max_bitrate));
 
-            m_endpoint.SetInitialBandwidth(OpalBandwidth::Direction::Tx
+            m_endpoint->SetInitialBandwidth(OpalBandwidth::Direction::Tx
                                                 , OpalBandwidth(config.max_bitrate));
         }
 
@@ -331,7 +337,7 @@ private:
 
             PStringArray mask;
 
-            for (const auto& f : OpalTranscoder::GetPossibleFormats(m_endpoint.GetMediaFormats()))
+            for (const auto& f : OpalTranscoder::GetPossibleFormats(m_endpoint->GetMediaFormats()))
             {
                 if (f.IsTransportable())
                 {
@@ -524,10 +530,10 @@ private:
 class opal_process : public PProcess
 {
 public:
-    using u_ptr_t = std::unique_ptr<opal_process>;
-    static u_ptr_t create()
+    static opal_process& get_instance()
     {
-        return std::make_unique<opal_process>();
+        static opal_process* single_process = new opal_process();
+        return *single_process;
     }
 
     opal_manager::u_ptr_t create_manager(const call_manager_config_t &config)
@@ -559,9 +565,7 @@ opal_factory &opal_factory::get_instance()
 }
 
 opal_factory::opal_factory()
-    : m_opal_process(opal_process::create())
 {
-    m_opal_process->InternalMain();
 }
 
 opal_factory::~opal_factory()
@@ -571,7 +575,7 @@ opal_factory::~opal_factory()
 
 i_call_manager::u_ptr_t opal_factory::create_manager(const call_manager_config_t &config)
 {
-    return m_opal_process->create_manager(config);
+    return opal_process::get_instance().create_manager(config);
 }
 
 codec_info_t::array_t opal_factory::supported_codecs()

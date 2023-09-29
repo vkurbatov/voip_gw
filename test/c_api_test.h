@@ -7,7 +7,7 @@
 #define __extern_c
 #endif
 
-__extern_c int app(int argc, const char *argv[]);
+__extern_c int c_app(int argc, const char *argv[]);
 
 
 

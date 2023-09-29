@@ -18,106 +18,119 @@ typedef int32_t vgw_result_t;
 
 #pragma pack(push, 1)
 
+// Категория сообщения. Пока категорий всего две:
 enum vgw_message_type_t
 {
-    message_manager = 0,
-    message_call
+    vgw_message_type_manager = 0,   // сообщения от менеджера звонков
+    vgw_message_type_call           // сообщения от звонка
 };
 
+// Медиа типы
 enum vgw_media_type_t
 {
-    undefined = 0,
-    audio,
-    video,
-    application
+    vgw_media_type_undefined = 0,
+    vgw_media_type_audio,
+    vgw_media_type_video,
+    vgw_media_type_application
 };
 
+// Тип медиа-стрима, по сути указывает направление потока
 enum vgw_stream_type_t
 {
-    inbound = 0,
-    outbound
+    vgw_stream_type_inbound = 0,
+    vgw_stream_type_outbound
 };
 
-struct vgw_call_manager_config_t
+enum vgw_call_type_t                                            // тип звонка, по сути указывает его направление
 {
-    const char*                         user_name;
-    const char*                         display_name;
-    uint32_t                            max_bitrate;
-    uint16_t                            min_rtp_port;
-    uint16_t                            max_rtp_port;
-    uint16_t                            max_rtp_packet_size;
-    const char*                         audio_codecs;
-    const char*                         video_codecs;
+    vgw_call_type_undefined = 0,
+    vgw_call_type_incoming,
+    vgw_call_type_outgoing
 };
 
-struct vgw_stream_info_t
+struct vgw_call_manager_config_t                                // конфигурация менеджера звонков. Задается только при создании менеджера
+                                                                // значения 0/NULL указывают что настройки будут испольованы по умолчанию
+{
+    const char*                         user_name;              // имя ползователя, фигурируемое в адресе.
+    const char*                         display_name;           // имя фигурируемое в заголовках.
+    uint32_t                            max_bitrate;            // максимальный битрейт потоков (пока не работает).
+    uint16_t                            min_rtp_port;           // минимальный..
+    uint16_t                            max_rtp_port;           // и максимальный порты для RTP
+    uint16_t                            max_rtp_packet_size;    // максимальный размер RTP-пакетов (для mtu)
+    const char*                         audio_codecs;           // список исползьуемых аудио-кодеков (через ';'). NULL - будут использованы все кодеки;
+    const char*                         video_codecs;           // список исползьуемых видео-кодеков (через ';'). NULL - будут использованы все кодеки;
+};
+
+struct vgw_stream_info_t                                        // cтруктура описания медиа-стримов
 {
     enum vgw_media_type_t               media_type;
     enum vgw_stream_type_t              stream_type;
-    int32_t                             stream_id;
+    int32_t                             stream_id;              // порядковый номер стрима (начиная с 1). Обычно 1 - аудио, 2 - видео
 };
 
 struct vgw_call_info_t
 {
-    vgw_handle_t                        call_handle;
-    const char*                         remote_url;
-    const char*                         call_id;
+    vgw_handle_t                        call_handle;            // дескриптор двонка
+    enum vgw_call_type_t                call_type;              // входящий или исходящий
+    const char*                         remote_url;             // url удаленного абонента
+    const char*                         call_id;                // уникальный идентификатор звонка
 };
 
-enum vgw_manager_event_type_t
+
+enum vgw_manager_event_type_t                                   // типы событий менежера
 {
-    started = 0,
-    stopped,
-    create_call,
-    release_call
+    vgw_manager_event_started = 0,                              // менеджер запущен
+    vgw_manager_event_stopped,                                  // менеджер остановлен
+    vgw_manager_event_create_call,                              // новый звонок (входящий или исходящий)
+    vgw_manager_event_release_call                              // отбит звонок
 };
 
-struct vgw_manager_message_t
+struct vgw_manager_message_t                                    // структура сообщений менеджера
 {
     enum vgw_manager_event_type_t       event_type;
-    vgw_handle_t                        handle;
+    vgw_handle_t                        handle;                 // дескриптор менеджера
     union
     {
-        struct vgw_call_info_t          call_info; // create_call, release_call
-    }                                   body;
+        struct vgw_call_info_t          call_info;              // только для create_call, release_call
+    }                                   body;                   // тело сообщения
 };
 
-struct vgw_audio_info_t
+struct vgw_audio_info_t                                         // структура описания формата
 {
-    const char*                         format;
-    uint32_t                            sample_rate;
-    uint32_t                            channels;
+    const char*                         format;                 // имя формата (задается системой, обычно PCM-16-***)
+    uint32_t                            sample_rate;            // частота дескритизации 8000, 16000, 32000, 48000
+    uint32_t                            channels;               // количество каналов 1-2
 };
 
-struct vgw_video_info_t
+struct vgw_video_info_t                                         // структура описания формата
 {
-    const char*                         format;
-    uint32_t                            width;
-    uint32_t                            height;
+    const char*                         format;                 // имя формата (задается системой, обычно YUV420P)
+    uint32_t                            width;                  // ширина фрейма
+    uint32_t                            height;                 // высота фрейма
 };
 
-struct vgw_media_frame_t
+struct vgw_media_frame_t                                        // струткура описания медиа-фрейма
 {
-    int32_t                             stream_id;
+    int32_t                             stream_id;              // идентификатор потока (не испольуется в очереди фреймов)
     enum vgw_media_type_t               media_type;
 
     union
     {
-        struct vgw_audio_info_t         audio_info;
-        struct vgw_video_info_t         video_info;
+        struct vgw_audio_info_t         audio_info;             // только для аудио-типа
+        struct vgw_video_info_t         video_info;             // только для видео-типа
     }                                   info;
 
-    uint32_t                            buffer_size;
-    void*                               buffer_ptr;
+    uint32_t                            buffer_size;            // размер буфера данных
+    void*                               buffer_ptr;             // указатель на буфер данных (ссылочный)
 };
 
-enum vgw_call_event_type_t
+enum vgw_call_event_type_t                                      // типы событий звонка
 {
-    open_stream = 0,
-    close_stream,
-    read_frame,
-    write_frame,
-    user_input
+    vgw_call_event_open_stream = 0,                             // новый стрим
+    vgw_call_event_close_stream,                                //
+    vgw_call_event_read_frame,
+    vgw_call_event_write_frame,
+    vgw_call_event_user_input
 };
 
 struct vgw_call_message_t
@@ -137,17 +150,27 @@ struct vgw_call_message_t
 typedef vgw_result_t (*message_callback_t)(enum vgw_message_type_t type
                                            , void* message);
 
-vgw_handle_t create_manager(const struct vgw_call_manager_config_t* manager_config
-                            , message_callback_t callback_manager);
-vgw_result_t release_manager(vgw_handle_t manager_handle);
-vgw_result_t start_manager(vgw_handle_t manager_handle);
-vgw_result_t stop_manager(vgw_handle_t manager_handle);
-vgw_result_t make_call(vgw_handle_t manager_handle
-                                  , const char* url);
+vgw_handle_t vgw_create_manager(const struct vgw_call_manager_config_t* manager_config
+                                , message_callback_t callback_manager);
+vgw_result_t vgw_release_manager(vgw_handle_t manager_handle);
+vgw_result_t vgw_start_manager(vgw_handle_t manager_handle);
+vgw_result_t vgw_stop_manager(vgw_handle_t manager_handle);
+vgw_result_t vgw_make_call(vgw_handle_t manager_handle
+                           , const char* url);
 
-vgw_result_t send_user_input(vgw_handle_t call_handle
-                                        , const char* tones);
-vgw_result_t hangup_call(vgw_handle_t call_handle);
+vgw_result_t vgw_send_user_input(vgw_handle_t call_handle
+                                  , const char* tones);
+vgw_result_t vgw_hangup_call(vgw_handle_t call_handle);
+
+vgw_handle_t vgw_create_frame_queue(uint32_t queue_size);
+vgw_handle_t vgw_release_frame_queue(vgw_handle_t handle);
+vgw_handle_t vgw_clear_frame_queue(vgw_handle_t handle);
+vgw_result_t vgw_push_frame(vgw_handle_t handle
+                            , const struct vgw_media_frame_t* media_frame);
+vgw_result_t vgw_pop_frame(vgw_handle_t handle
+                           , struct vgw_media_frame_t* media_frame
+                           , uint32_t timeout_ms);
+
 
 #ifdef __cplusplus
 }

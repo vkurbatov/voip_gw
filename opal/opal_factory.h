@@ -12,7 +12,6 @@ class opal_process;
 
 class opal_factory : public i_call_factory
 {
-    std::unique_ptr<opal_process>   m_opal_process;
 public:
 
     using u_ptr_t = std::unique_ptr<opal_factory>;

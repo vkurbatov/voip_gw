@@ -248,7 +248,7 @@ public:
     }
 };
 
-void api_test()
+int cpp_app(int argc, const char *argv[])
 {
     test_listener listener;
 
@@ -330,4 +330,6 @@ void api_test()
             manager->stop();
         }
     }
+
+    return 0;
 }

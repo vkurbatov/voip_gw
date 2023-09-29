@@ -1,6 +1,6 @@
 #ifndef API_TEST_H
 #define API_TEST_H
 
-void api_test();
+int cpp_app(int argc, const char *argv[]);
 
 #endif // API_TEST_H
