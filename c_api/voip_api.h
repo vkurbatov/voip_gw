@@ -126,47 +126,71 @@ struct vgw_media_frame_t                                        // струтк�
 
 enum vgw_call_event_type_t                                      // типы событий звонка
 {
-    vgw_call_event_open_stream = 0,                             // новый стрим
-    vgw_call_event_close_stream,                                //
-    vgw_call_event_read_frame,
-    vgw_call_event_write_frame,
-    vgw_call_event_user_input
+    vgw_call_event_open_stream = 0,                             // открыт новый стрим
+    vgw_call_event_close_stream,                                // закрыт действующий стрим
+    vgw_call_event_read_frame,                                  // запрос на чтение медиа-фрейма для передачи удаленной стороне
+    vgw_call_event_write_frame,                                 // запрос на запись медиа-фрейма принятого от удаленной стороны
+    vgw_call_event_user_input                                   // событие тонального набора от удаленной станции
 };
 
 struct vgw_call_message_t
 {
    enum vgw_call_event_type_t           event_type;
-    vgw_handle_t                        handle;
+    vgw_handle_t                        handle;                 // дескриптор звонка
     union
     {
-        struct vgw_stream_info_t        stream_info;    // open_stream, close_stream
-        struct vgw_media_frame_t        media_frame;    // read_frame, write_frame
-        const char*                     tones;          // user_input
+        struct vgw_stream_info_t        stream_info;            // open_stream, close_stream
+        struct vgw_media_frame_t        media_frame;            // read_frame, write_frame
+        const char*                     tones;                  // user_input
     }                                   body;
 };
 
 #pragma pack(pop)
 
+// функция обратного вызова для обработки voip-событий
 typedef vgw_result_t (*message_callback_t)(enum vgw_message_type_t type
                                            , void* message);
 
+// запрос на создание менеджера звонков (может быть только один экземпляр)
+// возвращает дескриптор менеджера
 vgw_handle_t vgw_create_manager(const struct vgw_call_manager_config_t* manager_config
-                                , message_callback_t callback_manager);
+                                , message_callback_t message_callback);
+
+// освободить менеджер звонков
 vgw_result_t vgw_release_manager(vgw_handle_t manager_handle);
+
+// запустить менеджер звонков
 vgw_result_t vgw_start_manager(vgw_handle_t manager_handle);
+
+// остановить менеджер звонков
 vgw_result_t vgw_stop_manager(vgw_handle_t manager_handle);
+
+// создать исходящий звонок (например, url=sip:user@192.168.0.1:3060)
 vgw_result_t vgw_make_call(vgw_handle_t manager_handle
                            , const char* url);
 
+// отправить DTMF-последовательность удаленной стороне
 vgw_result_t vgw_send_user_input(vgw_handle_t call_handle
                                   , const char* tones);
+
+// отбить звонок
 vgw_result_t vgw_hangup_call(vgw_handle_t call_handle);
 
+// создать очредь фреймов, queue_size - максимально количество фреймов в очереди
+// возвращает дескриптор очереди
 vgw_handle_t vgw_create_frame_queue(uint32_t queue_size);
+
+// удалить очередь
 vgw_handle_t vgw_release_frame_queue(vgw_handle_t handle);
+
+// очистить очередь
 vgw_handle_t vgw_clear_frame_queue(vgw_handle_t handle);
+
+// записать в очередь фрейм
 vgw_result_t vgw_push_frame(vgw_handle_t handle
                             , const struct vgw_media_frame_t* media_frame);
+
+// считать из очереди медиафрейм, timeout_ms - таймаут ожидания если очередь пустая
 vgw_result_t vgw_pop_frame(vgw_handle_t handle
                            , struct vgw_media_frame_t* media_frame
                            , uint32_t timeout_ms);

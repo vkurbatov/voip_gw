@@ -715,13 +715,13 @@ public:
 }
 
 vgw_handle_t vgw_create_manager(const vgw_call_manager_config_t* manager_config
-                                , message_callback_t callback_manager)
+                                , message_callback_t message_callback)
 {
     if (manager_config != nullptr
-            && callback_manager != nullptr)
+            && message_callback != nullptr)
     {
         return voip::manager_adapter::get_instance().create_manager(*manager_config
-                                                                    , callback_manager);
+                                                                    , message_callback);
     }
 
     return vgw_failed;

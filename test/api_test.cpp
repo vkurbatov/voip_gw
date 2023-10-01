@@ -285,13 +285,15 @@ int cpp_app(int argc, const char *argv[])
 
         if (manager->start())
         {
-            manager->make_call("sip:username@192.168.0.104:5060");
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            if (argc == 2)
+            {
+                manager->make_call(argv[1]);
+            }
+
             while(count-- > 0)
             {
                 if (auto call = listener.get_call())
                 {
-                    call->control(voip_control_tone_t("1234"));
                     for (std::size_t i = 0; i < call->session_count(); i++)
                     {
                         if (auto session = call->get_session(i + 1))
