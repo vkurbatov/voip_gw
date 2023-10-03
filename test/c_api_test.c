@@ -271,7 +271,7 @@ int c_app(int argc
     manager_config.min_rtp_port = 10000;
     manager_config.max_rtp_port = 11000;
     manager_config.max_rtp_packet_size = 1400;
-    manager_config.audio_codecs = "G7221;PCMA;PCMU";
+    manager_config.audio_codecs = "G722;PCMA;PCMU";
     manager_config.video_codecs = "H264;H265;H263-1998";
 
     vgw_handle_t manager = vgw_create_manager(&manager_config

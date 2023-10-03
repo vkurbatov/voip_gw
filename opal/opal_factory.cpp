@@ -8,6 +8,7 @@
 #include <sip/sipep.h>
 #include <opal/transcoders.h>
 
+#include <mutex>
 #include <shared_mutex>
 #include <thread>
 #include <cstring>
@@ -32,7 +33,8 @@ class opal_manager final : public i_call_manager
         opal_endpoint(opal_manager& owner)
             : OpalLocalEndPoint(owner.m_native_manager
                                 , OPAL_LOCAL_PREFIX
-                                , true)
+                                , true
+                                , e_SimulateSynchronous)
             , m_owner(owner)
         {
 
@@ -85,12 +87,15 @@ class opal_manager final : public i_call_manager
             return false;
         }
 
-        bool OnReadMediaData(const OpalLocalConnection &connection
-                             , const OpalMediaStream &mediaStream
+
+        bool OnReadMediaData(OpalLocalConnection &connection
+                             , OpalMediaStream &mediaStream
                              , void *data
                              , PINDEX size
                              , PINDEX &length) override
         {
+            std::cout << "OnReadMediaData: id: " << mediaStream.GetSessionID()
+                      << ", size: " << size << std::endl;
             return m_owner.on_read_media_data(connection
                                                , mediaStream
                                                , data
@@ -105,6 +110,8 @@ class opal_manager final : public i_call_manager
                               , PINDEX &written) override
         {
 
+            std::cout << "OnWriteMediaData: id: " << mediaStream.GetSessionID()
+                      << ", size: " << written << std::endl;
             return m_owner.on_write_media_data(connection
                                                , mediaStream
                                                , data

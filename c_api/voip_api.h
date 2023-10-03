@@ -21,8 +21,8 @@ typedef int32_t vgw_result_t;
 // Категория сообщения. Пока категорий всего две:
 enum vgw_message_type_t
 {
-    vgw_message_type_manager = 0,   // сообщения от менеджера звонков
-    vgw_message_type_call           // сообщения от звонка
+    vgw_message_type_manager = 0,                               // сообщения от менеджера звонков
+    vgw_message_type_call                                       // сообщения от звонка
 };
 
 // Медиа типы

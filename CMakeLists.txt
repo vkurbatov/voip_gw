@@ -3,23 +3,16 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_CXX_STANDARD 17)
 
 project(voip_gw)
-set(TEST_PROJECT_NAME
-    "${PROJECT_NAME}_test"
-    )
 
-set(CMAKE_FRAMEWORK_PATH
-    /home/user/opal/lib)
+#set(CMAKE_FRAMEWORK_PATH
+#    /home/user/opal/lib)
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(PTLIB REQUIRED ptlib)
 pkg_search_module(OPAL REQUIRED opal)
 
-string(LENGTH "${CMAKE_SOURCE_DIR}/" SOURCE_PATH_SIZE)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -W -Wall -Wno-unused-parameter -Werror=return-type -Werror=reorder -Wno-switch -Wno-deprecated-declarations")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSOURCE_PATH_SIZE=${SOURCE_PATH_SIZE}")
-
-add_definitions("-DSOURCE_PATH_SIZE=${SOURCE_PATH_SIZE}")
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
@@ -115,26 +108,7 @@ target_link_libraries(${PROJECT_NAME}
     ${OPAL_LIBRARIES}
     )
 
-set(TEST_SOURCES
-    test/api_test.cpp
-    test/c_api_test.c
-    test/main.cpp
-)
-
-set(TEST_HEADERS
-    test/c_api_test.h
-    test/api_test.h
-)
-
-
-add_executable(${TEST_PROJECT_NAME}
-    ${TEST_SOURCES}
-    ${TEST_HEADERS}
-)
-
-target_link_libraries(${TEST_PROJECT_NAME}
-    ${PROJECT_NAME}
-    )
+add_subdirectory(test)
 
 
     

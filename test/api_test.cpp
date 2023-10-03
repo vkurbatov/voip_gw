@@ -259,12 +259,14 @@ int cpp_app(int argc, const char *argv[])
     config.max_bitrate = 1024000; // not work!!!
 
     config.audio_codecs.push_back("G7221");
+    config.audio_codecs.push_back("PCMA");
+    config.audio_codecs.push_back("PCMU");
     config.video_codecs.push_back("H264");
 
     config.min_rtp_port = 10000;
     config.max_rtp_port = 10100;
 
-    config.max_rtp_packet_size = 900;
+    config.max_rtp_packet_size = 1400;
 
     auto count = 1000;
 
