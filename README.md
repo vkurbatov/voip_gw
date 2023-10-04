@@ -34,17 +34,17 @@ $make
 ## Сборка и установка opal:
 
 Устанавливаем зависимости opal: 
-
+```
 #apt install pkg-config autoconf libtool autotools-dev libavutil-dev libswresample-dev libavcodec-dev libx264-dev libspeexdsp-dev libopus-dev libvpx-dev libexpat1-dev libgsm1-dev libpcap-dev liblua5.2-dev libncurses-dev libjpeg-dev libssl-dev
-
+```
 Клонируем pt (https://sourceforge.net/p/opalvoip/opal/ci/v3_20/tree/):
-
+```
 git clone https://git.code.sf.net/p/opalvoip/opal opalvoip-opal
-
+```
 Переключаемся на ветку релиза 2.20:
-
+```
 $git checkout 04810b
-
+```
 Внимательно читаем инструкцию по сборке opal: http://wiki.opalvoip.org/index.php?n=Main.BuildingOpalUnix
 
 Либо собираем по инструкции сами (если получится), либо собираем как я собирал:
