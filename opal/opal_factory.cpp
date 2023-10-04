@@ -94,8 +94,6 @@ class opal_manager final : public i_call_manager
                              , PINDEX size
                              , PINDEX &length) override
         {
-            std::cout << "OnReadMediaData: id: " << mediaStream.GetSessionID()
-                      << ", size: " << size << std::endl;
             return m_owner.on_read_media_data(connection
                                                , mediaStream
                                                , data
@@ -109,9 +107,12 @@ class opal_manager final : public i_call_manager
                               , PINDEX length
                               , PINDEX &written) override
         {
-
-            std::cout << "OnWriteMediaData: id: " << mediaStream.GetSessionID()
-                      << ", size: " << written << std::endl;
+            if (length == 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                written = 0;
+                return true;
+            }
             return m_owner.on_write_media_data(connection
                                                , mediaStream
                                                , data
@@ -265,7 +266,7 @@ public:
         codec_info_t::array_t codecs;
         const PStringArray& mask  = m_native_manager.GetMediaFormatMask();
         std::set<std::string> mask_set;
-        for (auto i = 0; i < mask.GetSize(); i++)
+        for (std::size_t i = 0; i < mask.GetSize(); i++)
         {
             mask_set.insert(mask[i]);
         }
@@ -383,10 +384,6 @@ private:
             m_native_manager.SetMediaFormatMask(mask);
 
         }
-
-
-        // std::set<std::string> codec_map;
-
     }
 
     inline opal_call* get_opal_call(const std::string& token)

@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_CXX_STANDARD 17)
 
-project(voip_gw)
+project(voipgw
+    DESCRIPTION "voipgw library"
+    VERSION 1.0.0)
 
 #set(CMAKE_FRAMEWORK_PATH
 #    /home/user/opal/lib)
@@ -50,7 +52,7 @@ set(SOURCES
     opal/opal_media_session.cpp
     opal/opal_media_stream.cpp
     opal/opal_manager_config.cpp
-    c_api/voip_api.h
+    c_api/voip_api_impl.cpp
 )
 
 set(PUBLIC_HEADERS
@@ -73,9 +75,17 @@ set(PUBLIC_HEADERS
     audio_frame_info.h
     video_frame_info.h
     stream_metrics.h
+    voip_control.h
+    c_api/voip_api.h
     opal/opal_types.h
     opal/opal_manager_config.h
 )
+
+set(UTILS_HEADER
+    utils/frame_queue.h
+    utils/adaptive_delay.h
+    utils/common_utils.h
+    )
 
 set(PRIVATE_HEADERS
     smart_buffer.h
@@ -83,12 +93,7 @@ set(PRIVATE_HEADERS
     mutable_data_buffer.h
     audio_frame_impl.h
     video_frame_impl.h
-    voip_control.h
     engine_impl.h
-    c_api/voip_api_impl.cpp
-    utils/frame_queue.h
-    utils/adaptive_delay.h
-    utils/common_utils.h
     opal/opal_utils.h
     opal/opal_video_frame.h
     opal/opal_factory.h
@@ -97,8 +102,9 @@ set(PRIVATE_HEADERS
     opal/opal_media_stream.h
 )
 
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
     ${SOURCES}
+    ${UTILS_HEADER}
     ${PRIVATE_HEADERS}
     ${PUBLIC_HEADERS}
 )
@@ -108,7 +114,15 @@ target_link_libraries(${PROJECT_NAME}
     ${OPAL_LIBRARIES}
     )
 
-add_subdirectory(test)
+configure_file(pc/voipgw.pc.in voipgw.pc @ONLY)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS};${UTILS_HEADER}")
+
+install(TARGETS ${PROJECT_NAME}
+        LIBRARY
+        PUBLIC_HEADER DESTINATION include/${PROJECT_NAME})
+install(
+        FILES ${CMAKE_BINARY_DIR}/voipgw.pc DESTINATION lib/pkgconfig)
 
 
     
